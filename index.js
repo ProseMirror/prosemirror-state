@@ -89,7 +89,11 @@ function editorStateClass(fields) {
     static fromDoc(doc, selection) {
       if (!selection) selection = Selection.atStart(doc)
       let initial = {}
-      fieldNames.forEach(name => initial[name] = fields[name](doc, selection))
+      fieldNames.forEach(name => {
+        let value = fields[name]
+        if (value instanceof Function) value = value(doc, selection)
+        initial[name] = value
+      })
       return new EditorState(doc, selection, null, initial)
     }
 
@@ -102,6 +106,10 @@ function editorStateClass(fields) {
       fieldNames.forEach(name => newFields[name] = fields[name])
       for (let name in addFields) if (hasProp(addFields, name)) newFields[name] = addFields[name]
       return editorStateClass(newFields)
+    }
+
+    static hasField(name) {
+      return /^(doc|selection|storedMarks)$/.test(name) || fieldNames.indexOf(name) > -1
     }
   }
   return EditorState
