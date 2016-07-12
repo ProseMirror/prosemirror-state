@@ -43,7 +43,7 @@ function editorStateClass(fields) {
       for (let i = 0; i < fieldNames.length; i++) {
         let name = fieldNames[i], val = this[name]
         if (val && val.applyTransform)
-          updated[name] = val.applyTransform(transform, options)
+          updated[name] = val.applyTransform(transform, options, this)
       }
       return new EditorState(transform.doc,
                              options.selection || this.selection.map(transform.doc, transform.mapping),
