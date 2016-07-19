@@ -159,3 +159,5 @@ function makeStateClass(plugins = []) {
   return EditorState
 }
 exports.makeStateClass = makeStateClass
+
+exports.EditorState = makeStateClass([])
