@@ -70,7 +70,7 @@ class EditorTransform extends Transform {
 
     this.replaceWith(from, to, fragment)
     let map = this.mapping.maps[this.mapping.maps.length - 1]
-    this.setSelection(Selection.near(this.doc.resolve(map.map(to))))
+    this.setSelection(Selection.near(this.doc.resolve(map.map(to)), node && node.isInline ? -1 : 1))
     return this
   }
 
@@ -87,6 +87,11 @@ class EditorTransform extends Transform {
   }
 
   apply(options) {
+    if (this.selectionSet && (!options || !options.selection)) {
+      let newOptions = {selection: this.selection}
+      if (options) for (let prop in options) newOptions[prop] = options[prop]
+      options = newOptions
+    }
     return this.state.applyTransform(this, options)
   }
 
