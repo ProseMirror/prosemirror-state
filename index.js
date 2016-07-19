@@ -2,7 +2,7 @@
 
 const {Mark} = require("../model")
 const {Selection} = require("../selection")
-const {Remapping} = require("../transform")
+const {Mapping} = require("../transform")
 
 const {EditorTransform} = require("./transform")
 exports.EditorTransform = EditorTransform
@@ -114,7 +114,7 @@ function makeStateClass(plugins = []) {
     }
 
     startDOMChange(id) {
-      return this.update({view: new ViewState(id, new Remapping, this.view.scrollToSelection)})
+      return this.update({view: new ViewState(id, new Mapping, this.view.scrollToSelection)})
     }
 
     endDOMChange() {
