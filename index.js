@@ -17,18 +17,65 @@ function hasProp(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop)
 }
 
-function editorStateClass(fields) {
-  const fieldNames = Object.keys(fields)
+class ViewState {
+  constructor(inDOMChange, domChangeMapping, scrollToSelection) {
+    this.inDOMChange = inDOMChange
+    this.domChangeMapping = domChangeMapping
+    this.scrollToSelection = scrollToSelection
+  }
+}
+ViewState.initial = new ViewState(null, null, false)
+exports.ViewState = ViewState
+
+const baseFields = {
+  doc: {
+    init(doc) { return doc },
+    applyTransform(state, transform) {
+      if (!transform.before.eq(state.doc))
+        throw new RangeError("Applying a transform that does not start with the current document")
+      return transform.doc
+    }
+  },
+  selection: {
+    init(_, selection) { return selection },
+    applyTransform(state, transform, options) {
+      return options.selection || state.selection.map(transform.doc, transform.mapping)
+    },
+    applySelection(_, selection) { return selection }
+  },
+  storedMarks: {
+    init() { return null },
+    applyTransform(state, _, options) { return options.selection ? null : state.storedMarks },
+    applySelection() { return null }
+  },
+
+  view: {
+    init() { return ViewState.initial },
+    applyTransform(state, transform, options) {
+      return new ViewState(state.view.inDOMChange,
+                           state.view.domChangeMapping && state.view.domChangeMapping.copy().appendMapping(transform.mapping),
+                           options.scrollIntoView ? true : options.selection ? false : state.view.scrollToSelection)
+    },
+    applySelection(state, _, options) {
+      return new ViewState(state.view.inDOMChange, state.view.domChangeMapping, !!options.scrollIntoView)
+    }
+  }
+}
+
+function makeStateClass(plugins = []) {
+  let fieldNames, descs = {}
 
   class EditorState {
-    constructor(doc, selection, storedMarks, updated, preserved) {
-      this.doc = doc
-      this.selection = selection
-      this.storedMarks = storedMarks
+    // :: (Object) → EditorState
+    // Create a new state object by updating some of the fields in the
+    // current object.
+    update(fields) {
+      let newInstance = new EditorState
       for (let i = 0; i < fieldNames.length; i++) {
         let name = fieldNames[i]
-        this[name] = updated && hasProp(updated, name) ? updated[name] : preserved[name]
+        newInstance[name] = hasProp(fields, name) ? fields[name] : this[name]
       }
+      return newInstance
     }
 
     // :: Schema
@@ -37,110 +84,77 @@ function editorStateClass(fields) {
     }
 
     applyTransform(transform, options = nullOptions) {
-      if (!transform.docs[0].eq(this.doc))
-        throw new RangeError("Applying a transform that does not start with the current document")
-      let updated = {}
+      let newInstance = new EditorState
       for (let i = 0; i < fieldNames.length; i++) {
-        let name = fieldNames[i], val = this[name]
-        if (val && val.applyTransform)
-          updated[name] = val.applyTransform(transform, options, this)
+        let name = fieldNames[i], desc = descs[name]
+        newInstance[name] = desc.applyTransform ? desc.applyTransform(this, transform, options) : this[name]
       }
-      return new EditorState(transform.doc,
-                             options.selection || this.selection.map(transform.doc, transform.mapping),
-                             options.selection ? null : this.storedMarks,
-                             updated, this)
+      return newInstance
     }
 
     applySelection(selection, options = nullOptions) {
-      let updated = {}
+      let newInstance = new EditorState
       for (let i = 0; i < fieldNames.length; i++) {
-        let name = fieldNames[i], val = this[name]
-        if (val && val.applySelection)
-          updated[name] = val.applySelection(selection, options)
+        let name = fieldNames[i], desc = descs[name]
+        newInstance[name] = desc.applySelection ? desc.applySelection(this, selection, options) : this[name]
       }
-      return new EditorState(this.doc, selection, null, updated, this)
+      return newInstance
     }
 
     addActiveMark(mark) {
-      if (!this.selection.empty) return this
-      return new EditorState(this.doc, this.selection,
-                             mark.addToSet(this.storedMarks || currentMarks(this.doc, this.selection)),
-                             null, this)
+      let set = this.storedMarks
+      if (this.selection.empty) set = mark.addToSet(set || currentMarks(this.doc, this.selection))
+      return set == this.storedMarks ? this : this.update({storedMarks: set})
     }
 
     removeActiveMark(markType) {
-      if (!this.selection.empty) return this
-      return new EditorState(this.doc, this.selection,
-                             markType.removeFromSet(this.storedMarks || currentMarks(this.doc, this.selection)),
-                             null, this)
+      let set = this.storedMarks
+      if (this.selection.empty) set = markType.removeFromSet(set || currentMarks(this.doc, this.selection))
+      return set == this.storedMarks ? this : this.update({storedMarks: set})
+    }
+
+    startDOMChange(id) {
+      return this.update({view: new ViewState(id, new Remapping, this.view.scrollToSelection)})
+    }
+
+    endDOMChange() {
+      return this.update({view: new ViewState(null, null, this.view.scrollToSelection)})
     }
 
     // :: EditorTransform
     // Create a selection-aware `Transform` object.
     get tr() { return new EditorTransform(this) }
 
-    update(fields) {
-      return new EditorState(this.doc || this.doc,
-                             this.selection || this.selection,
-                             this.storedMarks || this.storedMarks,
-                             fields, this)
-    }
-
     static fromDoc(doc, selection) {
       if (!selection) selection = Selection.atStart(doc)
-      let initial = {}
-      fieldNames.forEach(name => {
-        let value = fields[name]
-        if (value instanceof Function) value = value(doc, selection)
-        initial[name] = value
-      })
-      return new EditorState(doc, selection, null, initial)
+      let instance = new EditorState
+      for (let i = 0; i < fieldNames.length; i++) {
+        let name = fieldNames[i]
+        instance[name] = descs[name].init(doc, selection)
+      }
+      return instance
     }
 
     static fromSchema(schema) {
       return this.fromDoc(schema.nodes.doc.createAndFill())
     }
-
-    static extend(addFields) {
-      let newFields = {}
-      fieldNames.forEach(name => newFields[name] = fields[name])
-      for (let name in addFields) if (hasProp(addFields, name)) newFields[name] = addFields[name]
-      return editorStateClass(newFields)
-    }
-
-    static hasField(name) {
-      return /^(doc|selection|storedMarks)$/.test(name) || fieldNames.indexOf(name) > -1
-    }
   }
+
+  Object.keys(baseFields).forEach(name => descs[name] = baseFields[name])
+  plugins.forEach(plugin => {
+    Object.keys(plugin.stateFields || {}).forEach(field => {
+      if (hasProp(descs, field) || hasProp(EditorState.prototype, field))
+        throw new Error("Conflicting definition for state property " + field)
+      descs[field] = plugin.stateFields[field]
+    })
+    Object.keys(plugin.stateMethods || {}).forEach(method => {
+      if (hasProp(descs, method) || hasProp(EditorState.prototype, method))
+        throw new Error("Conflicting definition for state property " + method)
+      EditorState.prototype[method] = plugin.stateMethods[method]
+    })
+  })
+  fieldNames = Object.keys(descs)
+
   return EditorState
 }
-
-class ViewState {
-  constructor(inDOMChange, domChangeMapping, scrollToSelection) {
-    this.inDOMChange = inDOMChange
-    this.domChangeMapping = domChangeMapping
-    this.scrollToSelection = scrollToSelection
-  }
-
-  startDOMChange(id) {
-    return new ViewState(id, new Remapping, this.scrollToSelection)
-  }
-
-  endDOMChange() {
-    return new ViewState(null, null, this.scrollToSelection)
-  }
-
-  applyTransform(transform, options) {
-    return new ViewState(this.inDOMChange,
-                         this.domChangeMapping && this.domChangeMapping.copy().appendMapping(transform.mapping),
-                         options.scrollIntoView ? true : options.selection ? false : this.scrollToSelection)
-  }
-
-  applySelection(_selection, options) {
-    return new ViewState(this.inDOMChange, this.domChangeMapping, !!options.scrollIntoView)
-  }
-}
-ViewState.initial = new ViewState(null, null, false)
-exports.ViewState = ViewState
-
-exports.EditorState = editorStateClass({view: () => ViewState.initial})
+exports.makeStateClass = makeStateClass
