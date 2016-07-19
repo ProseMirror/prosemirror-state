@@ -1,9 +1,10 @@
 // !! This module implements the state object of a ProseMirror editor.
 
 const {Mark} = require("../model")
-const {Selection} = require("../selection")
 const {Mapping} = require("../transform")
 
+const {Selection, TextSelection, NodeSelection} = require("./selection")
+exports.Selection = Selection; exports.TextSelection = TextSelection; exports.NodeSelection = NodeSelection
 const {EditorTransform} = require("./transform")
 exports.EditorTransform = EditorTransform
 
