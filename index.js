@@ -28,77 +28,46 @@ class ViewState {
 ViewState.initial = new ViewState(null, null, false)
 exports.ViewState = ViewState
 
-const baseFields = {
-  doc: {
-    init(doc) { return doc },
-    applyTransform(state, transform) {
-      if (!transform.before.eq(state.doc))
-        throw new RangeError("Applying a transform that does not start with the current document")
-      return transform.doc
-    }
-  },
-  selection: {
-    init(_, selection) { return selection },
-    applyTransform(state, transform, options) {
-      return options.selection || state.selection.map(transform.doc, transform.mapping)
-    },
-    applySelection(_, selection) { return selection }
-  },
-  storedMarks: {
-    init() { return null },
-    applyTransform(state, _, options) { return options.selection ? null : state.storedMarks },
-    applySelection() { return null }
-  },
-
-  view: {
-    init() { return ViewState.initial },
-    applyTransform(state, transform, options) {
-      return new ViewState(state.view.inDOMChange,
-                           state.view.domChangeMapping && state.view.domChangeMapping.copy().appendMapping(transform.mapping),
-                           options.scrollIntoView ? true : options.selection ? false : state.view.scrollToSelection)
-    },
-    applySelection(state, _, options) {
-      return new ViewState(state.view.inDOMChange, state.view.domChangeMapping, !!options.scrollIntoView)
-    }
+class FieldDesc {
+  constructor(name, desc) {
+    this.init = desc.init
+    this.applyTransform = desc.applyTransform || (state => state[name])
+    this.applySelection = desc.applySelection || (state => state[name])
   }
 }
 
-function makeStateClass(plugins = []) {
-  let fieldNames, descs = {}
+function makeStateClass(fields, methods) {
+  let fieldNames = Object.keys(fields)
 
   class EditorState {
-    // :: (Object) → EditorState
-    // Create a new state object by updating some of the fields in the
-    // current object.
-    update(fields) {
-      let newInstance = new EditorState
-      for (let i = 0; i < fieldNames.length; i++) {
-        let name = fieldNames[i]
-        newInstance[name] = hasProp(fields, name) ? fields[name] : this[name]
-      }
-      return newInstance
-    }
-
     // :: Schema
     get schema() {
       return this.doc.type.schema
     }
 
-    applyTransform(transform, options = nullOptions) {
+    // :: (Object) → EditorState
+    // Create a new state object by updating some of the fields in the
+    // current object.
+    update(updated) {
       let newInstance = new EditorState
       for (let i = 0; i < fieldNames.length; i++) {
-        let name = fieldNames[i], desc = descs[name]
-        newInstance[name] = desc.applyTransform ? desc.applyTransform(this, transform, options) : this[name]
+        let name = fieldNames[i]
+        newInstance[name] = hasProp(updated, name) ? updated[name] : this[name]
       }
+      return newInstance
+    }
+
+    applyTransform(transform, options = nullOptions) {
+      let newInstance = new EditorState
+      for (let i = 0; i < fieldNames.length; i++)
+        newInstance[fieldNames[i]] = fields[fieldNames[i]].applyTransform(this, transform, options)
       return newInstance
     }
 
     applySelection(selection, options = nullOptions) {
       let newInstance = new EditorState
-      for (let i = 0; i < fieldNames.length; i++) {
-        let name = fieldNames[i], desc = descs[name]
-        newInstance[name] = desc.applySelection ? desc.applySelection(this, selection, options) : this[name]
-      }
+      for (let i = 0; i < fieldNames.length; i++)
+        newInstance[fieldNames[i]] = fields[fieldNames[i]].applySelection(this, selection, options)
       return newInstance
     }
 
@@ -129,35 +98,72 @@ function makeStateClass(plugins = []) {
     static fromDoc(doc, selection) {
       if (!selection) selection = Selection.atStart(doc)
       let instance = new EditorState
-      for (let i = 0; i < fieldNames.length; i++) {
-        let name = fieldNames[i]
-        instance[name] = descs[name].init(doc, selection)
-      }
+      for (let i = 0; i < fieldNames.length; i++)
+        instance[fieldNames[i]] = fields[fieldNames[i]].init(doc, selection)
       return instance
     }
 
     static fromSchema(schema) {
       return this.fromDoc(schema.nodes.doc.createAndFill())
     }
+
+    static extend(spec) {
+      let fieldCopy = {}, methodCopy = {}
+      Object.keys(fields).forEach(name => fieldCopy[name] = fields[name])
+      Object.keys(methods).forEach(name => methodCopy[name] = methods[name])
+
+      Object.keys(spec.fields || {}).forEach(name => {
+        if (hasProp(fields, name) || hasProp(EditorState.prototype, name))
+          throw new Error("Conflicting definition for state property " + name)
+        fieldCopy[name] = new FieldDesc(name, spec.fields[name])
+      })
+      Object.keys(spec.methods || {}).forEach(name => {
+        if (hasProp(fields, name) || hasProp(EditorState.prototype, name))
+          throw new Error("Conflicting definition for state property " + name)
+        methodCopy[name] = spec.methods[name]
+      })
+      return makeStateClass(fieldCopy, methodCopy)
+    }
   }
 
-  Object.keys(baseFields).forEach(name => descs[name] = baseFields[name])
-  plugins.forEach(plugin => {
-    Object.keys(plugin.stateFields || {}).forEach(field => {
-      if (hasProp(descs, field) || hasProp(EditorState.prototype, field))
-        throw new Error("Conflicting definition for state property " + field)
-      descs[field] = plugin.stateFields[field]
-    })
-    Object.keys(plugin.stateMethods || {}).forEach(method => {
-      if (hasProp(descs, method) || hasProp(EditorState.prototype, method))
-        throw new Error("Conflicting definition for state property " + method)
-      EditorState.prototype[method] = plugin.stateMethods[method]
-    })
-  })
-  fieldNames = Object.keys(descs)
+  Object.keys(methods).forEach(name => EditorState.prototype[name] = methods[name])
 
   return EditorState
 }
-exports.makeStateClass = makeStateClass
 
-exports.EditorState = makeStateClass([])
+exports.EditorState = makeStateClass({
+  doc: new FieldDesc("doc", {
+    init(doc) { return doc },
+    applyTransform(state, transform) {
+      if (!transform.before.eq(state.doc))
+        throw new RangeError("Applying a transform that does not start with the current document")
+      return transform.doc
+    }
+  }),
+
+  selection: new FieldDesc("selection", {
+    init(_, selection) { return selection },
+    applyTransform(state, transform, options) {
+      return options.selection || state.selection.map(transform.doc, transform.mapping)
+    },
+    applySelection(_, selection) { return selection }
+  }),
+
+  storedMarks: new FieldDesc("storedMarks", {
+    init() { return null },
+    applyTransform(state, _, options) { return options.selection ? null : state.storedMarks },
+    applySelection() { return null }
+  }),
+
+  view: new FieldDesc("view", {
+    init() { return ViewState.initial },
+    applyTransform(state, transform, options) {
+      return new ViewState(state.view.inDOMChange,
+                           state.view.domChangeMapping && state.view.domChangeMapping.copy().appendMapping(transform.mapping),
+                           options.scrollIntoView ? true : options.selection ? false : state.view.scrollToSelection)
+    },
+    applySelection(state, _, options) {
+      return new ViewState(state.view.inDOMChange, state.view.domChangeMapping, !!options.scrollIntoView)
+    }
+  })
+}, {})
