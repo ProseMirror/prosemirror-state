@@ -91,6 +91,7 @@ function buildStateClass(plugins) {
     }
 
     applySelection(selection, options = nullOptions) {
+      if (typeof selection == "number") selection = Selection.near(this.doc.resolve(selection))
       let newInstance = new EditorState
       for (let i = 0; i < fields.length; i++)
         newInstance[fields[i].name] = fields[i].applySelection(this, selection, options)
