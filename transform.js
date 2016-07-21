@@ -7,7 +7,7 @@ const {Selection} = require("./selection")
 class EditorTransform extends Transform {
   constructor(state) {
     super(state.doc)
-    this.state = state
+    this.storedMarks = state.storedMarks
     this.curSelection = state.selection
     this.curSelectionAt = 0
     this.selectionSet = false
@@ -44,7 +44,7 @@ class EditorTransform extends Transform {
     let {$from, $to, from, to, node: selNode} = this.selection
 
     if (node && node.isInline && inheritMarks !== false)
-      node = node.mark(this.state.view.storedMarks || this.doc.marksAt(from))
+      node = node.mark(this.storedMarks || this.doc.marksAt(from))
     let fragment = Fragment.from(node)
 
     if (selNode && selNode.isTextblock && node && node.isInline) {
@@ -88,7 +88,7 @@ class EditorTransform extends Transform {
       ;({from, to} = this.selection)
     }
 
-    let node = text ? this.doc.type.schema.text(text, this.state.view.storedMarks || this.doc.marksAt(from)) : null
+    let node = text ? this.doc.type.schema.text(text, this.storedMarks || this.doc.marksAt(from)) : null
     if (useSel)
       this.replaceSelection(node, false)
     else
