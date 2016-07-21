@@ -28,6 +28,12 @@ class Selection {
     return this.from == this.to
   }
 
+  action(options) {
+    let action = {type: "selection", selection: this}
+    if (options) for (let prop in options) action[prop] = options[prop]
+    return action
+  }
+
   // :: (other: Selection) → bool #path=Selection.prototype.eq
   // Test whether the selection is the same as another selection.
 

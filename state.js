@@ -20,44 +20,57 @@ class FieldDesc {
   constructor(name, desc) {
     this.name = name
     this.init = desc.init
-    this.applyTransform = desc.applyTransform || (state => state[name])
-    this.applySelection = desc.applySelection || (state => state[name])
+    this.applyAction = desc.applyAction
   }
 }
 
 const baseFields = [
   new FieldDesc("doc", {
-    init(doc) { return doc },
-    applyTransform(state, transform) {
-      if (!transform.before.eq(state.doc))
-        throw new RangeError("Applying a transform that does not start with the current document")
-      return transform.doc
+    init(config) { return config.doc },
+    applyAction(state, action) {
+      return action.type == "transform" ? action.transform.doc : state.doc
     }
   }),
 
   new FieldDesc("selection", {
-    init(_, selection) { return selection },
-    applyTransform(state, transform, options) {
-      return options.selection || state.selection.map(transform.doc, transform.mapping)
-    },
-    applySelection(_, selection) { return selection }
+    init(config) { return config.selection },
+    applyAction(state, action) {
+      if (action.type == "transform")
+        return action.selection || state.selection.map(action.transform.doc, action.transform.mapping)
+      if (action.type == "selection")
+        return action.selection
+      return state.selection
+    }
   }),
 
   new FieldDesc("storedMarks", {
     init() { return null },
-    applyTransform(state, _, options) { return options.selection ? null : state.storedMarks },
-    applySelection() { return null }
+    applyAction(state, action) {
+      if (state.type == "transform") return action.selection ? null : state.storedMarks
+      if (state.type == "selection") return null
+      if (state.type == "addStoredMark" && state.selection.empty)
+        return action.mark.addToSet(state.storedMarks || currentMarks(state.doc, state.selection))
+      if (state.type == "removeStoredMark" && state.selection.empty)
+        return action.markType.removeFromSet(state.storedMarks || currentMarks(state.doc, state.selection))
+      return state.storedMarks
+    }
   }),
 
   new FieldDesc("view", {
     init() { return ViewState.initial },
-    applyTransform(state, transform, options) {
-      return new ViewState(state.view.inDOMChange,
-                           state.view.domChangeMapping && state.view.domChangeMapping.copy().appendMapping(transform.mapping),
-                           options.scrollIntoView ? true : options.selection ? false : state.view.scrollToSelection)
-    },
-    applySelection(state, _, options) {
-      return new ViewState(state.view.inDOMChange, state.view.domChangeMapping, !!options.scrollIntoView)
+    applyAction(state, action) {
+      let view = state.view
+      if (action.type == "transform")
+        return new ViewState(view.inDOMChange,
+                             view.domChangeMapping && view.domChangeMapping.copy().appendMapping(action.transform.mapping),
+                             action.scrollIntoView ? true : action.selection ? false : view.scrollToSelection)
+      if (action.type == "selection")
+        return new ViewState(view.inDOMChange, view.domChangeMapping, action.scrollIntoView)
+      if (action.type == "startDOMChange")
+        return new ViewState(action.id, new Mapping, view.scrollToSelection)
+      if (action.type == "endDOMChange")
+        return new ViewState(null, null, view.scrollToSelection)
+      return view
     }
   })
 ]
@@ -71,51 +84,11 @@ function buildStateClass(plugins) {
       return this.doc.type.schema
     }
 
-    // :: (Object) → EditorState
-    // Create a new state object by updating some of the fields in the
-    // current object.
-    update(updated) {
-      let newInstance = new EditorState
-      for (let i = 0; i < fields.length; i++) {
-        let name = fields[i].name
-        newInstance[name] = hasProp(updated, name) ? updated[name] : this[name]
-      }
-      return newInstance
-    }
-
-    applyTransform(transform, options = nullOptions) {
+    applyAction(action) {
       let newInstance = new EditorState
       for (let i = 0; i < fields.length; i++)
-        newInstance[fields[i].name] = fields[i].applyTransform(this, transform, options)
+        newInstance[fields[i].name] = fields[i].applyAction(this, action)
       return newInstance
-    }
-
-    applySelection(selection, options = nullOptions) {
-      if (typeof selection == "number") selection = Selection.near(this.doc.resolve(selection))
-      let newInstance = new EditorState
-      for (let i = 0; i < fields.length; i++)
-        newInstance[fields[i].name] = fields[i].applySelection(this, selection, options)
-      return newInstance
-    }
-
-    addActiveMark(mark) {
-      let set = this.storedMarks
-      if (this.selection.empty) set = mark.addToSet(set || currentMarks(this.doc, this.selection))
-      return set == this.storedMarks ? this : this.update({storedMarks: set})
-    }
-
-    removeActiveMark(markType) {
-      let set = this.storedMarks
-      if (this.selection.empty) set = markType.removeFromSet(set || currentMarks(this.doc, this.selection))
-      return set == this.storedMarks ? this : this.update({storedMarks: set})
-    }
-
-    startDOMChange(id) {
-      return this.update({view: new ViewState(id, new Mapping, this.view.scrollToSelection)})
-    }
-
-    endDOMChange() {
-      return this.update({view: new ViewState(null, null, this.view.scrollToSelection)})
     }
 
     // :: EditorTransform
@@ -123,11 +96,11 @@ function buildStateClass(plugins) {
     get tr() { return new EditorTransform(this) }
 
     static create(config) {
-      let doc = config.doc || config.schema.nodes.doc.createAndFill()
-      let selection = config.selection || Selection.atStart(doc)
+      if (!config.doc) config.doc = config.schema.nodes.doc.createAndFill()
+      if (!config.selection) config.selection = Selection.atStart(config.doc)
       let instance = new EditorState
       for (let i = 0; i < fields.length; i++)
-        instance[fields[i].name] = fields[i].init(doc, selection)
+        instance[fields[i].name] = fields[i].init(config)
       return instance
     }
   }
@@ -138,11 +111,6 @@ function buildStateClass(plugins) {
         throw new Error("Conflicting definition for state field " + name)
       fields.push(new FieldDesc(name, plugin.stateFields[name]))
     })
-    if (plugin.stateMethods) Object.keys(plugin.stateMethods).forEach(name => {
-      if (fields.some(f => f.name == name) || EditorState.prototype.hasOwnProperty(name))
-        throw new Error("Conflicting definition for state field " + name)
-      EditorState.prototype[name] = plugin.stateMethods[name]
-    })
   })
 
   return EditorState
@@ -151,10 +119,4 @@ exports.buildStateClass = buildStateClass
 
 function currentMarks(doc, selection) {
   return selection.head == null ? Mark.none : doc.marksAt(selection.head)
-}
-
-const nullOptions = {}
-
-function hasProp(obj, prop) {
-  return Object.prototype.hasOwnProperty.call(obj, prop)
 }

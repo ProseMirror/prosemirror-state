@@ -41,10 +41,10 @@ class EditorTransform extends Transform {
   // is null. When `inheritMarks` is true and the node is an inline
   // node, it inherits the marks from the place where it is inserted.
   replaceSelection(node, inheritMarks) {
-    let {empty, $from, $to, from, to, node: selNode} = this.selection
+    let {$from, $to, from, to, node: selNode} = this.selection
 
     if (node && node.isInline && inheritMarks !== false)
-      node = node.mark(empty ? this.state.view.storedMarks : this.doc.marksAt(from))
+      node = node.mark(this.state.view.storedMarks || this.doc.marksAt(from))
     let fragment = Fragment.from(node)
 
     if (selNode && selNode.isTextblock && node && node.isInline) {
@@ -82,22 +82,35 @@ class EditorTransform extends Transform {
 
   // :: (string) → EditorTransform
   // Replace the selection with a text node containing the given string.
-  typeText(text) {
-    return this.replaceSelection(this.state.schema.text(text), true)
-  }
-
-  apply(options) {
-    if (this.selectionSet && (!options || !options.selection)) {
-      let newOptions = {selection: this.selection}
-      if (options) for (let prop in options) newOptions[prop] = options[prop]
-      options = newOptions
+  insertText(text, from, to = from) {
+    let useSel = from == null
+    if (useSel) {
+      ;({from, to} = this.selection)
     }
-    return this.state.applyTransform(this, options)
+
+    let node = text ? this.doc.type.schema.text(text, this.state.view.storedMarks || this.doc.marksAt(from)) : null
+    if (useSel)
+      this.replaceSelection(node, false)
+    else
+      this.replaceWith(from, to, node)
+
+    if (text) {
+      let map = this.mapping.maps[this.mapping.maps.length - 1]
+      this.setSelection(Selection.findFrom(this.doc.resolve(map.map(to)), -1))
+    }
+    return this
   }
 
-  applyAndScroll() {
-    return this.state.applyTransform(this, {scrollIntoView: true,
-                                            selection: this.selectionSet ? this.selection : null})
+  action(options) {
+    let action = {type: "transform",
+                  transform: this,
+                  selection: this.selectionSet ? this.selection : null}
+    if (options) for (let prop in options) action[prop] = options[prop]
+    return action
+  }
+
+  scrollAction() {
+    return this.action({scrollIntoView: true})
   }
 }
 exports.EditorTransform = EditorTransform
