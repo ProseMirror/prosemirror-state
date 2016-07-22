@@ -6,4 +6,4 @@
 
 exports.EditorTransform = require("./transform").EditorTransform
 
-exports.baseConfig = require("./config").baseConfig
+exports.EditorState = require("./state").EditorState

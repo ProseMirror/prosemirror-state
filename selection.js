@@ -102,6 +102,13 @@ class Selection {
     }
     return found
   }
+
+  static fromJSON(doc, json) {
+    if (json.head != null)
+      return new TextSelection(doc.resolve(json.anchor), doc.resolve(json.head))
+    else
+      return new NodeSelection(doc.resolve(json.node))
+  }
 }
 exports.Selection = Selection
 
@@ -148,6 +155,10 @@ class TextSelection extends Selection {
     return new SelectionToken(TextSelection, this.anchor, this.head)
   }
 
+  toJSON() {
+    return {head: this.head, anchor: this.anchor}
+  }
+
   static mapToken(token, mapping) {
     return new SelectionToken(TextSelection, mapping.map(token.a), mapping.map(token.b))
   }
@@ -192,6 +203,10 @@ class NodeSelection extends Selection {
 
   get token() {
     return new SelectionToken(NodeSelection, this.from, this.to)
+  }
+
+  toJSON() {
+    return {node: this.from}
   }
 
   static mapToken(token, mapping) {

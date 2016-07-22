@@ -1,6 +1,6 @@
 // !! This module implements the state object of a ProseMirror editor.
 
-const {Mark} = require("../model")
+const {Mark, Node} = require("../model")
 const {Mapping} = require("../transform")
 
 const {Selection} = require("./selection")
@@ -21,26 +21,32 @@ class FieldDesc {
     this.name = name
     this.init = desc.init
     this.applyAction = desc.applyAction
+    this.toJSON = desc.toJSON || (() => null)
+    this.fromJSON = desc.fromJSON || ((config, _, instance) => this.init(config, instance))
   }
 }
 
 const baseFields = [
   new FieldDesc("doc", {
-    init(config) { return config.doc },
+    init(config) { return config.doc || config.schema.nodes.doc.createAndFill() },
     applyAction(state, action) {
       return action.type == "transform" ? action.transform.doc : state.doc
-    }
+    },
+    toJSON(value) { return value.toJSON() },
+    fromJSON(config, json) { return Node.fromJSON(config.schema, json) }
   }),
 
   new FieldDesc("selection", {
-    init(config) { return config.selection },
+    init(config, instance) { return config.selection || Selection.atStart(instance.doc) },
     applyAction(state, action) {
       if (action.type == "transform")
         return action.selection || state.selection.map(action.transform.doc, action.transform.mapping)
       if (action.type == "selection")
         return action.selection
       return state.selection
-    }
+    },
+    toJSON(value) { return Selection.toJSON(value) },
+    fromJSON(_, json, instance) { return Selection.fromJSON(instance.doc, json) }
   }),
 
   new FieldDesc("storedMarks", {
@@ -75,48 +81,66 @@ const baseFields = [
   })
 ]
 
-function buildStateClass(plugins) {
-  let fields = baseFields.slice()
-
-  class EditorState {
-    // :: Schema
-    get schema() {
-      return this.doc.type.schema
-    }
-
-    applyAction(action) {
-      let newInstance = new EditorState
-      for (let i = 0; i < fields.length; i++)
-        newInstance[fields[i].name] = fields[i].applyAction(this, action)
-      return newInstance
-    }
-
-    // :: EditorTransform
-    // Create a selection-aware `Transform` object.
-    get tr() { return new EditorTransform(this) }
-
-    static create(config) {
-      if (!config.doc) config.doc = config.schema.nodes.doc.createAndFill()
-      if (!config.selection) config.selection = Selection.atStart(config.doc)
-      let instance = new EditorState
-      for (let i = 0; i < fields.length; i++)
-        instance[fields[i].name] = fields[i].init(config)
-      return instance
-    }
-  }
-
-  plugins.forEach(plugin => {
-    if (plugin.stateFields) Object.keys(plugin.stateFields).forEach(name => {
-      if (fields.some(f => f.name == name) || EditorState.prototype.hasOwnProperty(name))
-        throw new Error("Conflicting definition for state field " + name)
-      fields.push(new FieldDesc(name, plugin.stateFields[name]))
-    })
-  })
-
-  return EditorState
-}
-exports.buildStateClass = buildStateClass
-
 function currentMarks(doc, selection) {
   return selection.head == null ? Mark.none : doc.marksAt(selection.head)
 }
+
+function resolveFields(config) {
+  let fields = baseFields.slice()
+  if (config.plugins) for (let i = 0; i < config.plugins.length; i++) {
+    let plugin = config.plugins[i]
+    if (plugin.stateFields) for (let name in plugin.stateFields) if (plugin.stateFields.hasOwnProperty(name)) {
+      let conflict = name == "fields" || EditorState.prototype.hasOwnProperty(name)
+      for (let j = 0; j < fields.length; j++) if (fields[j].name == name) conflict = true
+      if (conflict) throw new Error("Conflicting definition for state field " + name)
+      fields.push(new FieldDesc(name, plugin.stateFields[name]))
+    }
+  }
+  return fields
+}
+
+class EditorState {
+  constructor(fields) {
+    this.fields = fields
+  }
+
+  // :: Schema
+  get schema() {
+    return this.doc.type.schema
+  }
+
+  applyAction(action) {
+    let newInstance = new EditorState(this.fields)
+    for (let i = 0; i < this.fields.length; i++)
+      newInstance[this.fields[i].name] = this.fields[i].applyAction(this, action)
+    return newInstance
+  }
+
+  // :: EditorTransform
+  // Create a selection-aware `Transform` object.
+  get tr() { return new EditorTransform(this) }
+
+  static create(config) {
+    let fields = resolveFields(config), instance = new EditorState(fields)
+    for (let i = 0; i < fields.length; i++)
+      instance[fields[i].name] = fields[i].init(config, instance)
+    return instance
+  }
+
+  toJSON() {
+    let result = {}
+    for (let i = 0; i < this.fields.length; i++) {
+      let field = this.fields[i], json = field.toJSON(this[field.name])
+      if (json != null) result[field.name] = json
+    }
+    return result
+  }
+
+  fromJSON(config, json) {
+    let fields = resolveFields(config), instance = new EditorState(fields)
+    for (let i = 0; i < fields.length; i++)
+      instance[fields[i].name] = fields[i].init(config, json[fields[i].name], instance)
+    return instance
+  }
+}
+exports.EditorState = EditorState
