@@ -94,7 +94,7 @@ class EditorTransform extends Transform {
     else
       this.replaceWith(from, to, node)
 
-    if (text) {
+    if (text && useSel) {
       let map = this.mapping.maps[this.mapping.maps.length - 1]
       this.setSelection(Selection.findFrom(this.doc.resolve(map.map(to)), -1))
     }
