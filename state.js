@@ -52,11 +52,11 @@ const baseFields = [
   new FieldDesc("storedMarks", {
     init() { return null },
     applyAction(state, action) {
-      if (state.type == "transform") return action.selection ? null : state.storedMarks
-      if (state.type == "selection") return null
-      if (state.type == "addStoredMark" && state.selection.empty)
+      if (action.type == "transform") return action.selection ? null : state.storedMarks
+      if (action.type == "selection") return null
+      if (action.type == "addStoredMark" && state.selection.empty)
         return action.mark.addToSet(state.storedMarks || currentMarks(state.doc, state.selection))
-      if (state.type == "removeStoredMark" && state.selection.empty)
+      if (action.type == "removeStoredMark" && state.selection.empty)
         return action.markType.removeFromSet(state.storedMarks || currentMarks(state.doc, state.selection))
       return state.storedMarks
     }
