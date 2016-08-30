@@ -41,6 +41,9 @@ class Selection {
   // Map this selection through a [mappable](#Mappable) thing. `doc`
   // should be the new document, to which we are mapping.
 
+  // :: () → Object #path=Selection.prototype.toJSON
+  // Convert the selection to a JSON representation.
+
   // :: (ResolvedPos, number, ?bool) → ?Selection
   // Find a valid cursor or leaf node selection starting at the given
   // position and searching back if `dir` is negative, and forward if
@@ -103,11 +106,28 @@ class Selection {
     return found
   }
 
-  static fromJSON(doc, json) {
-    if (json.head != null)
-      return new TextSelection(doc.resolve(json.anchor), doc.resolve(json.head))
+  static mapJSON(json, mapping) {
+    if (json.anchor != null)
+      return {head: mapping.map(json.head), anchor: mapping.map(json.anchor)}
     else
-      return new NodeSelection(doc.resolve(json.node))
+      return {node: mapping.map(json.node), after: mapping.map(json.after, -1)}
+  }
+
+  // :: (Node, Object) → Selection
+  static fromJSON(doc, json) {
+    // This is cautious, because the history will blindly map
+    // selections and then try to deserialize them, and the endpoints
+    // might not point at appropriate positions anymore (though they
+    // are guaranteed to be inside of the document's range).
+    if (json.head != null) {
+      let $anchor = doc.resolve(json.anchor), $head = doc.resolve(json.head)
+      if ($anchor.parent.isTextblock && $head.parent.isTextblock) return new TextSelection($anchor, $head)
+      else return Selection.between($anchor, $head)
+    } else {
+      let $pos = doc.resolve(json.node), after = $pos.nodeAfter
+      if (after && json.after == json.pos + after.nodeSize && after.type.selectable) return new NodeSelection($pos)
+      else return Selection.near($pos)
+    }
   }
 }
 exports.Selection = Selection
@@ -151,23 +171,8 @@ class TextSelection extends Selection {
     return new TextSelection($anchor.parent.isTextblock ? $anchor : $head, $head)
   }
 
-  get token() {
-    return new SelectionToken(TextSelection, this.anchor, this.head)
-  }
-
   toJSON() {
     return {head: this.head, anchor: this.anchor}
-  }
-
-  static mapToken(token, mapping) {
-    return new SelectionToken(TextSelection, mapping.map(token.a), mapping.map(token.b))
-  }
-
-  static fromToken(token, doc) {
-    let $head = doc.resolve(token.b)
-    if (!$head.parent.isTextblock) return Selection.near($head)
-    let $anchor = doc.resolve(token.a)
-    return new TextSelection($anchor.parent.isTextblock ? $anchor : $head, $head)
   }
 }
 exports.TextSelection = TextSelection
@@ -201,34 +206,11 @@ class NodeSelection extends Selection {
     return Selection.near($from)
   }
 
-  get token() {
-    return new SelectionToken(NodeSelection, this.from, this.to)
-  }
-
   toJSON() {
-    return {node: this.from}
-  }
-
-  static mapToken(token, mapping) {
-    return new SelectionToken(NodeSelection, mapping.map(token.a, 1), mapping.map(token.b, -1))
-  }
-
-  static fromToken(token, doc) {
-    let $from = doc.resolve(token.a), node = $from.nodeAfter
-    if (node && token.b == token.a + node.nodeSize && node.type.selectable)
-      return new NodeSelection($from)
-    return Selection.near($from)
+    return {node: this.from, after: this.to}
   }
 }
 exports.NodeSelection = NodeSelection
-
-class SelectionToken {
-  constructor(type, a, b) {
-    this.type = type
-    this.a = a
-    this.b = b
-  }
-}
 
 // FIXME we'll need some awareness of text direction when scanning for selections
 
