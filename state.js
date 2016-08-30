@@ -21,8 +21,8 @@ class FieldDesc {
     this.name = name
     this.init = desc.init
     this.applyAction = desc.applyAction
-    this.toJSON = desc.toJSON || (() => null)
-    this.fromJSON = desc.fromJSON || ((config, _, instance) => this.init(config, instance))
+    this.toJSON = desc.toJSON
+    this.fromJSON = desc.fromJSON
   }
 }
 
@@ -45,7 +45,7 @@ const baseFields = [
         return action.selection
       return state.selection
     },
-    toJSON(value) { return Selection.toJSON(value) },
+    toJSON(value) { return value.toJSON() },
     fromJSON(_, json, instance) { return Selection.fromJSON(instance.doc, json) }
   }),
 
@@ -85,23 +85,30 @@ function currentMarks(doc, selection) {
   return selection.head == null ? Mark.none : doc.marksAt(selection.head)
 }
 
-function resolveFields(config) {
-  let fields = baseFields.slice()
-  if (config.plugins) for (let i = 0; i < config.plugins.length; i++) {
-    let plugin = config.plugins[i]
-    if (plugin.stateFields) for (let name in plugin.stateFields) if (plugin.stateFields.hasOwnProperty(name)) {
-      let conflict = name == "fields" || EditorState.prototype.hasOwnProperty(name)
-      for (let j = 0; j < fields.length; j++) if (fields[j].name == name) conflict = true
-      if (conflict) throw new Error("Conflicting definition for state field " + name)
-      fields.push(new FieldDesc(name, plugin.stateFields[name]))
-    }
+class PluginSet {
+  constructor(plugins) {
+    this.fields = baseFields.slice()
+    this.plugins = []
+    if (plugins) plugins.forEach(plugin => {
+      this.plugins.push(plugin)
+      if (plugin.stateFields) for (let name in plugin.stateFields) if (plugin.stateFields.hasOwnProperty(name)) {
+        if (name == "_pluginSet" || EditorState.prototype.hasOwnProperty(name) ||
+            this.fields.some(field => field.name == name))
+          throw new Error("Conflicting definition for state property " + name)
+        this.fields.push(new FieldDesc(name, plugin.stateFields[name]))
+      }
+    })
   }
-  return fields
 }
 
 class EditorState {
-  constructor(fields) {
-    this.fields = fields
+  constructor(pluginSet) {
+    this._pluginSet = pluginSet
+  }
+
+  // :: [Object]
+  get plugins() {
+    return this._pluginSet.plugins
   }
 
   // :: Schema
@@ -110,9 +117,9 @@ class EditorState {
   }
 
   applyAction(action) {
-    let newInstance = new EditorState(this.fields)
-    for (let i = 0; i < this.fields.length; i++)
-      newInstance[this.fields[i].name] = this.fields[i].applyAction(this, action)
+    let newInstance = new EditorState(this._pluginSet), fields = this._pluginSet.fields
+    for (let i = 0; i < fields.length; i++)
+      newInstance[fields[i].name] = fields[i].applyAction(this, action)
     return newInstance
   }
 
@@ -121,25 +128,42 @@ class EditorState {
   get tr() { return new EditorTransform(this) }
 
   static create(config) {
-    let fields = resolveFields(config), instance = new EditorState(fields)
-    for (let i = 0; i < fields.length; i++)
-      instance[fields[i].name] = fields[i].init(config, instance)
+    let pluginSet = new PluginSet(config.plugins), instance = new EditorState(pluginSet)
+    for (let i = 0; i < pluginSet.fields.length; i++)
+      instance[pluginSet.fields[i].name] = pluginSet.fields[i].init(config, instance)
     return instance
   }
 
-  toJSON() {
-    let result = {}
-    for (let i = 0; i < this.fields.length; i++) {
-      let field = this.fields[i], json = field.toJSON(this[field.name])
+  reconfigure(config) {
+    let pluginSet = new PluginSet(config.plugins), fields = pluginSet.fields, instance = new EditorState(pluginSet)
+    for (let i = 0; i < fields.length; i++) {
+      let name = fields[i].name
+      if (this._pluginSet.fields.some(f => f.name == name))
+        instance[name] = this[name]
+      else
+        instance[name] = fields[i].init(config, instance)
+    }
+    return instance
+  }
+
+  toJSON(options) {
+    let result = {}, fields = this._pluginSet.fields
+    let ignore = options && options.ignore || []
+    for (let i = 0; i < fields.length; i++) {
+      let field = fields[i]
+      let json = field.toJSON && ignore.indexOf(field.name) == -1 ? field.toJSON(this[field.name]) : null
       if (json != null) result[field.name] = json
     }
     return result
   }
 
-  fromJSON(config, json) {
-    let fields = resolveFields(config), instance = new EditorState(fields)
-    for (let i = 0; i < fields.length; i++)
-      instance[fields[i].name] = fields[i].init(config, json[fields[i].name], instance)
+  static fromJSON(config, json) {
+    let pluginSet = new PluginSet(config.plugins), fields = pluginSet.fields, instance = new EditorState(pluginSet)
+    for (let i = 0; i < fields.length; i++) {
+      let field = pluginSet.fields[i], value = json[field.name]
+      if (value == null || !field.fromJSON) instance[field.name] = field.init(config, instance)
+      else instance[field.name] = field.fromJSON(config, value, instance)
+    }
     return instance
   }
 }
