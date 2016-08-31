@@ -2,7 +2,7 @@ const {Fragment} = require("../model")
 const {Transform, insertPoint} = require("../transform")
 const {Selection} = require("./selection")
 
-// ;; A selection-aware extension of `Transform`. Use `EditorState.tr`
+// ::- A selection-aware extension of `Transform`. Use `EditorState.tr`
 // to create an instance.
 class EditorTransform extends Transform {
   constructor(state) {

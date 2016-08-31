@@ -1,4 +1,4 @@
-// ;; An editor selection. Can be one of two selection types:
+// ::- An editor selection. Can be one of two selection types:
 // `TextSelection` or `NodeSelection`. Both have the properties
 // listed here, but also contain more information (such as the
 // selected [node](#NodeSelection.node) or the
@@ -34,14 +34,14 @@ class Selection {
     return action
   }
 
-  // :: (other: Selection) → bool #path=Selection.prototype.eq
+  // eq:: (other: Selection) → bool
   // Test whether the selection is the same as another selection.
 
-  // :: (doc: Node, mapping: Mappable) → Selection #path=Selection.prototype.map
+  // map:: (doc: Node, mapping: Mappable) → Selection
   // Map this selection through a [mappable](#Mappable) thing. `doc`
   // should be the new document, to which we are mapping.
 
-  // :: () → Object #path=Selection.prototype.toJSON
+  // toJSON:: () → Object
   // Convert the selection to a JSON representation.
 
   // :: (ResolvedPos, number, ?bool) → ?Selection
@@ -132,7 +132,7 @@ class Selection {
 }
 exports.Selection = Selection
 
-// ;; A text selection represents a classical editor
+// ::- A text selection represents a classical editor
 // selection, with a head (the moving side) and anchor (immobile
 // side), both of which point into textblock nodes. It can be empty (a
 // regular cursor position).
@@ -177,7 +177,7 @@ class TextSelection extends Selection {
 }
 exports.TextSelection = TextSelection
 
-// ;; A node selection is a selection that points at a
+// ::- A node selection is a selection that points at a
 // single node. All nodes marked [selectable](#NodeType.selectable)
 // can be the target of a node selection. In such an object, `from`
 // and `to` point directly before and after the selected node.
