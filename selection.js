@@ -1,8 +1,10 @@
 // ::- An editor selection. Can be one of two selection types:
-// `TextSelection` or `NodeSelection`. Both have the properties
+// [`TextSelection`](#state.TextSelection) or
+// [`NodeSelection`](#state.NodeSelection). Both have the properties
 // listed here, but also contain more information (such as the
-// selected [node](#NodeSelection.node) or the
-// [head](#TextSelection.head) and [anchor](#TextSelection.anchor)).
+// selected [node](#state.NodeSelection.node) or the
+// [head](#state.TextSelection.head) and
+// [anchor](#state.TextSelection.anchor)).
 class Selection {
   // :: number
   // The left bound of the selection.
@@ -28,6 +30,9 @@ class Selection {
     return this.from == this.to
   }
 
+  // :: (?Object) → SelectionAction
+  // Create an [action](#state.Action) that updates the selection to
+  // this one.
   action(options) {
     let action = {type: "selection", selection: this}
     if (options) for (let prop in options) action[prop] = options[prop]
@@ -38,7 +43,7 @@ class Selection {
   // Test whether the selection is the same as another selection.
 
   // map:: (doc: Node, mapping: Mappable) → Selection
-  // Map this selection through a [mappable](#Mappable) thing. `doc`
+  // Map this selection through a [mappable](#transform.Mappable) thing. `doc`
   // should be the new document, to which we are mapping.
 
   // toJSON:: () → Object
@@ -178,7 +183,7 @@ class TextSelection extends Selection {
 exports.TextSelection = TextSelection
 
 // ::- A node selection is a selection that points at a
-// single node. All nodes marked [selectable](#NodeType.selectable)
+// single node. All nodes marked [selectable](#model.NodeType.selectable)
 // can be the target of a node selection. In such an object, `from`
 // and `to` point directly before and after the selected node.
 class NodeSelection extends Selection {

@@ -1,5 +1,3 @@
-// !! This module implements the state object of a ProseMirror editor.
-
 const {Mark, Node} = require("../model")
 const {Mapping} = require("../transform")
 
@@ -101,21 +99,42 @@ class PluginSet {
   }
 }
 
+// ::- The state of a ProseMirror editor is represented by an object
+// of this type. This is a persistent data structure—it isn't updated,
+// but rather a new state value is computed from an old one with the
+// [`applyAction`](state.EditorState.applyAction) method.
+//
+// In addition to the built-in state fields, plugins can define
+// additional pieces of state.
 class EditorState {
   constructor(pluginSet) {
     this._pluginSet = pluginSet
   }
 
+  // doc:: Node
+  // The current document.
+
+  // selection:: Selection
+  // The selection.
+
+  // storedMarks:: ?[Mark]
+  // A set of marks to apply to the next character that's typed. Will
+  // be null whenever no explicit marks have been set.
+
   // :: [Object]
+  // The plugins that are active in this state.
   get plugins() {
     return this._pluginSet.plugins
   }
 
   // :: Schema
+  // The schema of the state's document.
   get schema() {
     return this.doc.type.schema
   }
 
+  // :: (Action) → EditorState
+  // Apply the given action to produce a new state.
   applyAction(action) {
     let newInstance = new EditorState(this._pluginSet), fields = this._pluginSet.fields
     for (let i = 0; i < fields.length; i++)
@@ -127,6 +146,14 @@ class EditorState {
   // Create a selection-aware `Transform` object.
   get tr() { return new EditorTransform(this) }
 
+  // :: (Object) → EditorState
+  // Create a state. `config` must be an object containing at least a
+  // `schema` (the schema to use) or `doc` (the starting document)
+  // property. When it has a `selection` property, that should be a
+  // valid [selection](#state.Selection) in the given document, to use
+  // as starting selection. Plugins, specified as an array in the
+  // `plugins` property, may read additional fields from the config
+  // object.
   static create(config) {
     let pluginSet = new PluginSet(config.plugins), instance = new EditorState(pluginSet)
     for (let i = 0; i < pluginSet.fields.length; i++)
@@ -134,6 +161,13 @@ class EditorState {
     return instance
   }
 
+  // :: (Object) → EditorState
+  // Create a new state based on this one, but with an adjusted set of
+  // active plugins. State fields that exist in both sets of plugins
+  // are kept unchanged. Those that no longer exist are dropped, and
+  // those that are new are initialized using their
+  // [`init`](#state.StateField.init) method, passing in the new
+  // configuration object..
   reconfigure(config) {
     let pluginSet = new PluginSet(config.plugins), fields = pluginSet.fields, instance = new EditorState(pluginSet)
     for (let i = 0; i < fields.length; i++) {
@@ -146,6 +180,10 @@ class EditorState {
     return instance
   }
 
+  // :: (?Object) → Object
+  // Convert this state to a JSON-serializable object. When the
+  // `ignore` option is given, it is interpreted as an array of field
+  // names that should not be serialized.
   toJSON(options) {
     let result = {}, fields = this._pluginSet.fields
     let ignore = options && options.ignore || []
@@ -157,6 +195,11 @@ class EditorState {
     return result
   }
 
+  // :: (Object, Object) → EditorState
+  // Deserialize a JSON representation of a state. `config` should
+  // have at least a `schema` field, and should contain array of
+  // plugins to initialize the state with. It is also passed as
+  // starting configuration for fields that were not serialized.
   static fromJSON(config, json) {
     let pluginSet = new PluginSet(config.plugins), fields = pluginSet.fields, instance = new EditorState(pluginSet)
     for (let i = 0; i < fields.length; i++) {
@@ -168,3 +211,77 @@ class EditorState {
   }
 }
 exports.EditorState = EditorState
+
+// Action:: interface
+// State updates are performed through actions, which are objects that
+// describe the update.
+//
+//  type:: string
+//  The type of this action. This determines the way the action is
+//  interpreted, and which other fields it should have.
+
+// TransformAction:: interface
+// An action type that transforms the state's document. Applying this
+// will create a state in which the document is the result of this
+// transformation.
+//
+//   type:: "transform"
+//
+//   transform:: Transform
+//
+//   selection:: ?Selection
+//   If given, this selection will be used as the new selection. If
+//   not, the old selection is mapped through the transform to.
+//
+//   scrollIntoView:: ?bool
+//   When true, the next display update will scroll the cursor into
+//   view.
+
+// SelectAction:: interface
+// An action that updates the selection.
+//
+//   type:: "selection"
+//
+//   selection:: Selection
+//   The new selection.
+//
+//   scrollIntoView:: ?bool
+//   When true, the next display update will scroll the cursor into
+//   view.
+
+// AddStoredMarkAction:: interface
+// An action type that adds a stored mark to the state.
+//
+//   type:: "addStoredMark"
+//
+//   mark:: Mark
+
+// RemoveStoredMarkAction:: interface
+// An action type that removes a stored mark from the state.
+//
+//   type:: "removeStoredMark"
+//
+//   markType:: MarkType
+
+// StateField:: interface<T>
+// A plugin may provide a set of state fields, as an object (under its
+// `stateFields` property) mapping field names to description objects
+// of this type.
+//
+//   init:: (config: Object, instance: EditorState) → T
+//   Initialize the value of this field. Note that `instance` is a
+//   half-initialized state instance, and will not have values for any
+//   fields initialzed after this one.
+//
+//   applyAction:: (state: EditorState, action: Action) → T
+//   Apply the given action to this state field, producing a new field
+//   value. Note that the `state` argument is the _old_ state, before
+//   the action was applied.
+//
+//   toJSON:: ?(value: T) → *
+//   Convert this field to JSON. Optional, can be left off to disable
+//   JSON serialization for the field.
+//
+//   fromJSON:: ?(config: Object, value: *, state: EditorState) → T
+//   Deserialize the JSON representation of this field. Note that the
+//   `state` argument is again a half-initialized state.

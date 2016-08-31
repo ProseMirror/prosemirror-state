@@ -2,8 +2,8 @@ const {Fragment} = require("../model")
 const {Transform, insertPoint} = require("../transform")
 const {Selection} = require("./selection")
 
-// ::- A selection-aware extension of `Transform`. Use `EditorState.tr`
-// to create an instance.
+// ::- A selection-aware extension of `Transform`. Use
+// [`EditorState.tr`](#state.EditorState.tr) to create an instance.
 class EditorTransform extends Transform {
   constructor(state) {
     super(state.doc)
@@ -15,9 +15,9 @@ class EditorTransform extends Transform {
 
   // :: Selection
   // The transform's current selection. This defaults to the
-  // editor selection [mapped](#Selection.map) through the steps in
+  // editor selection [mapped](#state.Selection.map) through the steps in
   // this transform, but can be overwritten with
-  // [`setSelection`](#EditorTransform.setSelection).
+  // [`setSelection`](#state.EditorTransform.setSelection).
   get selection() {
     if (this.curSelectionAt < this.steps.length) {
       this.curSelection = this.curSelection.map(this.doc, this.mapping.slice(this.curSelectionAt))
@@ -101,6 +101,9 @@ class EditorTransform extends Transform {
     return this
   }
 
+  // :: (?Object) → TransformAction
+  // Create a transform action. `options` can be given to add extra
+  // properties to the action object.
   action(options) {
     let action = {type: "transform",
                   transform: this,
@@ -109,6 +112,9 @@ class EditorTransform extends Transform {
     return action
   }
 
+  // :: () → TransformAction
+  // Create a transform action with the `scrollIntoView` property set
+  // to true (this is common enough to warrant a shortcut method).
   scrollAction() {
     return this.action({scrollIntoView: true})
   }
