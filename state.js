@@ -237,7 +237,7 @@ exports.EditorState = EditorState
 //   When true, the next display update will scroll the cursor into
 //   view.
 
-// SelectAction:: interface
+// SelectionAction:: interface
 // An action that updates the selection.
 //
 //   type:: "selection"
