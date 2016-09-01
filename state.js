@@ -110,7 +110,7 @@ class PluginSet {
 
   findPlugin(plugin) {
     for (let i = 0; i < this.plugins.length; i++)
-      if (this.plugins[i].id == plugin.id) return this.plugins[i]
+      if (this.plugins[i].root == plugin.root) return this.plugins[i]
   }
 }
 
