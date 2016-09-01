@@ -87,15 +87,30 @@ class PluginSet {
   constructor(plugins) {
     this.fields = baseFields.slice()
     this.plugins = []
-    if (plugins) plugins.forEach(plugin => {
-      this.plugins.push(plugin)
-      if (plugin.stateFields) for (let name in plugin.stateFields) if (plugin.stateFields.hasOwnProperty(name)) {
-        if (name == "_pluginSet" || EditorState.prototype.hasOwnProperty(name) ||
-            this.fields.some(field => field.name == name))
-          throw new Error("Conflicting definition for state property " + name)
-        this.fields.push(new FieldDesc(name, plugin.stateFields[name]))
-      }
-    })
+    if (plugins) plugins.forEach(plugin => this.addPlugin(plugin))
+  }
+
+  addPlugin(plugin) {
+    let deps = plugin.options.dependencies, found
+    if (deps) deps.forEach(plugin => this.addPlugin(plugin))
+    if (found = this.findPlugin(plugin)) {
+      if (found == plugin) return
+      throw new RangeError("Adding different configurations of the same plugin")
+    }
+
+    this.plugins.push(plugin)
+    let fields = plugin.options.stateFields
+    if (fields) for (let name in fields) if (fields.hasOwnProperty(name)) {
+      if (name == "_pluginSet" || EditorState.prototype.hasOwnProperty(name) ||
+          this.fields.some(field => field.name == name))
+        throw new Error("Conflicting definition for state property " + name)
+      this.fields.push(new FieldDesc(name, fields[name]))
+    }
+  }
+
+  findPlugin(plugin) {
+    for (let i = 0; i < this.plugins.length; i++)
+      if (this.plugins[i].id == plugin.id) return this.plugins[i]
   }
 }
 
