@@ -277,26 +277,3 @@ exports.EditorState = EditorState
 //   type:: "removeStoredMark"
 //
 //   markType:: MarkType
-
-// StateField:: interface<T>
-// A plugin may provide a set of state fields, as an object (under its
-// `stateFields` property) mapping field names to description objects
-// of this type.
-//
-//   init:: (config: Object, instance: EditorState) → T
-//   Initialize the value of this field. Note that `instance` is a
-//   half-initialized state instance, and will not have values for any
-//   fields initialzed after this one.
-//
-//   applyAction:: (state: EditorState, action: Action) → T
-//   Apply the given action to this state field, producing a new field
-//   value. Note that the `state` argument is the _old_ state, before
-//   the action was applied.
-//
-//   toJSON:: ?(value: T) → *
-//   Convert this field to JSON. Optional, can be left off to disable
-//   JSON serialization for the field.
-//
-//   fromJSON:: ?(config: Object, value: *, state: EditorState) → T
-//   Deserialize the JSON representation of this field. Note that the
-//   `state` argument is again a half-initialized state.
