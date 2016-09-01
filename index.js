@@ -1,4 +1,7 @@
-// !! This module implements the state object of a ProseMirror editor.
+// !!
+// This module implements the state object of a ProseMirror editor,
+// along with the representation of the selection and the plugin
+// abstraction.
 
 ;({Selection: exports.Selection,
    TextSelection: exports.TextSelection,

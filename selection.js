@@ -1,3 +1,5 @@
+// !! ### Selection
+
 // ::- An editor selection. Can be one of two selection types:
 // [`TextSelection`](#state.TextSelection) or
 // [`NodeSelection`](#state.NodeSelection). Both have the properties

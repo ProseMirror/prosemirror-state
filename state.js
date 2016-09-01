@@ -1,3 +1,5 @@
+// !! ### Editor State
+
 const {Mark, Node} = require("../model")
 const {Mapping} = require("../transform")
 
