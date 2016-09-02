@@ -1,5 +1,3 @@
-// !! Plugin System
-
 function copyObj(from, to) {
   for (let prop in from) to[prop] = from[prop]
   return to
