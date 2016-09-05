@@ -1,5 +1,5 @@
-const {Mark, Node} = require("../model")
-const {Mapping} = require("../transform")
+const {Mark, Node} = require("prosemirror-model")
+const {Mapping} = require("prosemirror-transform")
 
 const {Selection} = require("./selection")
 const {EditorTransform} = require("./transform")
