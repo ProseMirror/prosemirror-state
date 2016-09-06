@@ -23,6 +23,10 @@ exports.TestState = class TestState {
     this.state = this.state.applyAction(action.steps ? action.action() : action)
   }
 
+  command(cmd) {
+    cmd(this.state, action => this.apply(action))
+  }
+
   type(text) {
     this.apply(this.tr.replaceSelection(this.state.schema.text(text)))
   }
