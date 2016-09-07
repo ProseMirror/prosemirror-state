@@ -1,5 +1,5 @@
 const {EditorState, TextSelection, Plugin} = require("../src")
-const {schema, sameDoc, doc, p} = require("prosemirror-model/test/build")
+const {schema, eq, doc, p} = require("prosemirror-model/test/build")
 const ist = require("ist")
 
 const messageCountPlugin = new Plugin({
@@ -16,7 +16,7 @@ const messageCountPlugin = new Plugin({
 describe("State", () => {
   it("creates a default doc", () => {
     let state = EditorState.create({schema})
-    sameDoc(state.doc, doc(p()))
+    ist(state.doc, doc(p()), eq)
   })
 
   it("creates a default selection", () => {
@@ -28,8 +28,8 @@ describe("State", () => {
   it("applies transform actions", () => {
     let state = EditorState.create({schema})
     let newState = state.applyAction(state.tr.insertText("hi").action())
-    sameDoc(state.doc, doc(p()), "old state preserved")
-    sameDoc(newState.doc, doc(p("hi")), "new state updated")
+    ist(state.doc, doc(p()), eq)
+    ist(newState.doc, doc(p("hi")), eq)
     ist(newState.selection.from, 3)
   })
 
@@ -49,7 +49,7 @@ describe("State", () => {
                                  selection: {head: 3, anchor: 3},
                                  messageCount: 1}))
     let copy = EditorState.fromJSON({plugins: [messageCountPlugin], schema}, state.toJSON())
-    sameDoc(copy.doc, state.doc)
+    ist(copy.doc, state.doc, eq)
     ist(copy.selection.from, 3)
 
     let limitedJSON = state.toJSON({ignore: ["messageCount"]})
@@ -64,7 +64,7 @@ describe("State", () => {
     let without = state.reconfigure({})
     ist(without.messageCount, undefined)
     ist(without.plugins.length, 0)
-    sameDoc(without.doc, doc(p()))
+    ist(without.doc, doc(p()), eq)
     let reAdd = without.reconfigure({plugins: [messageCountPlugin]})
     ist(reAdd.messageCount, 0)
     ist(reAdd.plugins.length, 1)
