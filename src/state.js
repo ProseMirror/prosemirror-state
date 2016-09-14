@@ -83,8 +83,9 @@ function currentMarks(doc, selection) {
   return selection.head == null ? Mark.none : doc.marksAt(selection.head)
 }
 
-class PluginSet {
-  constructor(plugins) {
+class Configuration {
+  constructor(schema, plugins) {
+    this.schema = schema
     this.fields = baseFields.slice()
     this.plugins = []
     if (plugins) plugins.forEach(plugin => this.addPlugin(plugin))
@@ -101,7 +102,7 @@ class PluginSet {
     this.plugins.push(plugin)
     let fields = plugin.options.stateFields
     if (fields) for (let name in fields) if (fields.hasOwnProperty(name)) {
-      if (name == "_pluginSet" || EditorState.prototype.hasOwnProperty(name) ||
+      if (name == "_config" || EditorState.prototype.hasOwnProperty(name) ||
           this.fields.some(field => field.name == name))
         throw new Error("Conflicting definition for state property " + name)
       this.fields.push(new FieldDesc(name, fields[name]))
@@ -122,8 +123,8 @@ class PluginSet {
 // In addition to the built-in state fields, plugins can define
 // additional pieces of state.
 class EditorState {
-  constructor(pluginSet) {
-    this._pluginSet = pluginSet
+  constructor(config) {
+    this._config = config
   }
 
   // doc:: Node
@@ -139,19 +140,19 @@ class EditorState {
   // :: [Object]
   // The plugins that are active in this state.
   get plugins() {
-    return this._pluginSet.plugins
+    return this._config.plugins
   }
 
   // :: Schema
   // The schema of the state's document.
   get schema() {
-    return this.doc.type.schema
+    return this._config.schema
   }
 
   // :: (Action) → EditorState
   // Apply the given action to produce a new state.
   applyAction(action) {
-    let newInstance = new EditorState(this._pluginSet), fields = this._pluginSet.fields
+    let newInstance = new EditorState(this._config), fields = this._config.fields
     for (let i = 0; i < fields.length; i++)
       newInstance[fields[i].name] = fields[i].applyAction(this, action)
     return newInstance
@@ -170,9 +171,10 @@ class EditorState {
   // `plugins` property, may read additional fields from the config
   // object.
   static create(config) {
-    let pluginSet = new PluginSet(config.plugins), instance = new EditorState(pluginSet)
-    for (let i = 0; i < pluginSet.fields.length; i++)
-      instance[pluginSet.fields[i].name] = pluginSet.fields[i].init(config, instance)
+    let $config = new Configuration(config.schema || config.doc.type.schema, config.plugins)
+    let instance = new EditorState($config)
+    for (let i = 0; i < $config.fields.length; i++)
+      instance[$config.fields[i].name] = $config.fields[i].init(config, instance)
     return instance
   }
 
@@ -184,10 +186,11 @@ class EditorState {
   // [`init`](#state.StateField.init) method, passing in the new
   // configuration object..
   reconfigure(config) {
-    let pluginSet = new PluginSet(config.plugins), fields = pluginSet.fields, instance = new EditorState(pluginSet)
+    let $config = new Configuration(config.schema || this.schema, config.plugins)
+    let fields = $config.fields, instance = new EditorState($config)
     for (let i = 0; i < fields.length; i++) {
       let name = fields[i].name
-      if (this._pluginSet.fields.some(f => f.name == name))
+      if (this._config.fields.some(f => f.name == name))
         instance[name] = this[name]
       else
         instance[name] = fields[i].init(config, instance)
@@ -200,7 +203,7 @@ class EditorState {
   // `ignore` option is given, it is interpreted as an array of field
   // names that should not be serialized.
   toJSON(options) {
-    let result = {}, fields = this._pluginSet.fields
+    let result = {}, fields = this._config.fields
     let ignore = options && options.ignore || []
     for (let i = 0; i < fields.length; i++) {
       let field = fields[i]
@@ -216,9 +219,10 @@ class EditorState {
   // plugins to initialize the state with. It is also passed as
   // starting configuration for fields that were not serialized.
   static fromJSON(config, json) {
-    let pluginSet = new PluginSet(config.plugins), fields = pluginSet.fields, instance = new EditorState(pluginSet)
+    if (!config.schema) throw new RangeError("Required config field 'schema' missing")
+    let $config = new Configuration(config.schema, config.plugins), fields = $config.fields, instance = new EditorState($config)
     for (let i = 0; i < fields.length; i++) {
-      let field = pluginSet.fields[i], value = json[field.name]
+      let field = fields[i], value = json[field.name]
       if (value == null || !field.fromJSON) instance[field.name] = field.init(config, instance)
       else instance[field.name] = field.fromJSON(config, value, instance)
     }

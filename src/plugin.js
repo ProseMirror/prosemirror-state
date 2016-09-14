@@ -62,7 +62,7 @@ class Plugin {
   // exists. Note that this only works if the plugin in the state is
   // either this exact plugin, or they both share a common ancestor
   // through [`configure`](#state.Plugin.configure) calls.
-  find(state) { return state._pluginSet.findPlugin(this) }
+  find(state) { return state._config.findPlugin(this) }
 }
 exports.Plugin = Plugin
 
