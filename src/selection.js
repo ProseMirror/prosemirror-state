@@ -130,7 +130,7 @@ class Selection {
       else return Selection.between($anchor, $head)
     } else {
       let $pos = doc.resolve(json.node), after = $pos.nodeAfter
-      if (after && json.after == json.pos + after.nodeSize && after.type.selectable) return new NodeSelection($pos)
+      if (after && json.after == json.pos + after.nodeSize && isSelectable(after)) return new NodeSelection($pos)
       else return Selection.near($pos)
     }
   }
@@ -183,7 +183,7 @@ class TextSelection extends Selection {
 exports.TextSelection = TextSelection
 
 // ::- A node selection is a selection that points at a
-// single node. All nodes marked [selectable](#model.NodeType.selectable)
+// single node. All nodes marked [selectable](#model.NodeSpec.selectable)
 // can be the target of a node selection. In such an object, `from`
 // and `to` point directly before and after the selected node.
 class NodeSelection extends Selection {
@@ -206,7 +206,7 @@ class NodeSelection extends Selection {
     let $from = doc.resolve(mapping.map(this.from, 1))
     let to = mapping.map(this.to, -1)
     let node = $from.nodeAfter
-    if (node && to == $from.pos + node.nodeSize && node.type.selectable)
+    if (node && to == $from.pos + node.nodeSize && isSelectable(node))
       return new NodeSelection($from)
     return Selection.near($from)
   }
@@ -229,9 +229,15 @@ function findSelectionIn(doc, node, pos, index, dir, text) {
     if (!child.isLeaf) {
       let inner = findSelectionIn(doc, child, pos + dir, dir < 0 ? child.childCount : 0, dir, text)
       if (inner) return inner
-    } else if (!text && child.type.selectable) {
+    } else if (!text && isSelectable(child)) {
       return new NodeSelection(doc.resolve(pos - (dir < 0 ? child.nodeSize : 0)))
     }
     pos += child.nodeSize * dir
   }
 }
+
+function isSelectable(node) {
+  let spec = node.type.spec
+  return spec.selectable !== false && !spec.text
+}
+exports.isSelectable = isSelectable
