@@ -235,7 +235,6 @@ function findSelectionIn(doc, node, pos, index, dir, text) {
 }
 
 function isSelectable(node) {
-  let spec = node.type.spec
-  return spec.selectable !== false && !spec.text
+  return !node.isText && node.type.spec.selectable !== false
 }
 exports.isSelectable = isSelectable
