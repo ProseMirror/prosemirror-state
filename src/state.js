@@ -137,16 +137,16 @@ class EditorState {
   // A set of marks to apply to the next character that's typed. Will
   // be null whenever no explicit marks have been set.
 
-  // :: [Object]
-  // The plugins that are active in this state.
-  get plugins() {
-    return this._config.plugins
-  }
-
   // :: Schema
   // The schema of the state's document.
   get schema() {
     return this._config.schema
+  }
+
+  // :: [Plugin]
+  // The plugins that are active in this state.
+  get plugins() {
+    return this._config.plugins
   }
 
   // :: (Action) → EditorState
@@ -159,7 +159,7 @@ class EditorState {
   }
 
   // :: EditorTransform
-  // Create a selection-aware `Transform` object.
+  // Create a selection-aware [`Transform` object](#state.EditorTransform).
   get tr() { return new EditorTransform(this) }
 
   // :: (Object) → EditorState
@@ -167,9 +167,9 @@ class EditorState {
   // `schema` (the schema to use) or `doc` (the starting document)
   // property. When it has a `selection` property, that should be a
   // valid [selection](#state.Selection) in the given document, to use
-  // as starting selection. Plugins, specified as an array in the
-  // `plugins` property, may read additional fields from the config
-  // object.
+  // as starting selection. Plugins, which are specified as an array
+  // in the `plugins` property, may read additional fields from the
+  // config object.
   static create(config) {
     let $config = new Configuration(config.schema || config.doc.type.schema, config.plugins)
     let instance = new EditorState($config)
@@ -250,7 +250,7 @@ exports.EditorState = EditorState
 //
 //   selection:: ?Selection
 //   If given, this selection will be used as the new selection. If
-//   not, the old selection is mapped through the transform to.
+//   not, the old selection is mapped through the transform.
 //
 //   scrollIntoView:: ?bool
 //   When true, the next display update will scroll the cursor into

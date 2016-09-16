@@ -80,8 +80,9 @@ class EditorTransform extends Transform {
     return this.replaceSelection()
   }
 
-  // :: (string) → EditorTransform
-  // Replace the selection with a text node containing the given string.
+  // :: (string, from: ?number, to: ?number) → EditorTransform
+  // Replace the given range, or the selection if no range is given,
+  // with a text node containing the given string.
   insertText(text, from, to = from) {
     let useSel = from == null
     if (useSel) {

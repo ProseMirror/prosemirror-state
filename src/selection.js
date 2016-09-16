@@ -1,25 +1,19 @@
-// ::- An editor selection. Can be one of two selection types:
-// [`TextSelection`](#state.TextSelection) or
-// [`NodeSelection`](#state.NodeSelection). Both have the properties
-// listed here, but also contain more information (such as the
-// selected [node](#state.NodeSelection.node) or the
-// [head](#state.TextSelection.head) and
-// [anchor](#state.TextSelection.anchor)).
+// ::- Superclass for editor selections.
 class Selection {
   // :: number
-  // The left bound of the selection.
+  // The lower bound of the selection.
   get from() { return this.$from.pos }
 
   // :: number
-  // The right bound of the selection.
+  // The upper bound of the selection.
   get to() { return this.$to.pos }
 
   constructor($from, $to) {
     // :: ResolvedPos
-    // The resolved left bound of the selection
+    // The resolved lower bound of the selection
     this.$from = $from
     // :: ResolvedPos
-    // The resolved right bound of the selection
+    // The resolved upper bound of the selection
     this.$to = $to
   }
 
@@ -94,6 +88,10 @@ class Selection {
   }
 
   // :: (ResolvedPos, ResolvedPos, ?number) → Selection
+  // Find a selection that spans the given positions, if both are text
+  // positions. If not, return some other selection nearby, where
+  // `bias` determines whether the method searches forward (default)
+  // or backwards (negative number) first.
   static between($anchor, $head, bias) {
     let found = Selection.near($head, bias)
     if (found instanceof TextSelection) {
@@ -119,6 +117,7 @@ class Selection {
   }
 
   // :: (Node, Object) → Selection
+  // Deserialize a JSON representation of a selection.
   static fromJSON(doc, json) {
     // This is cautious, because the history will blindly map
     // selections and then try to deserialize them, and the endpoints
@@ -152,8 +151,7 @@ class TextSelection extends Selection {
   get head() { return this.$head.pos }
 
   // :: (ResolvedPos, ?ResolvedPos)
-  // Construct a text selection. When `head` is not given, it defaults
-  // to `anchor`.
+  // Construct a text selection.
   constructor($anchor, $head = $anchor) {
     let inv = $anchor.pos > $head.pos
     super(inv ? $head : $anchor, inv ? $anchor : $head)

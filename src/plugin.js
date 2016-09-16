@@ -16,9 +16,10 @@ function copyObj(from, to) {
 // derive different configurations from it using
 // [`configure`](#state.Plugin.configure). This creates a _unique_
 // plugin, which means that an error is raised when multiple instances
-// are added to a single editor. You can find the instance of such a
-// plugin in a state by calling its [`find`](#state.Plugin.find)
-// method.
+// are added to a single editor. This is appropriate if your plugin
+// defines state fields, for example. You can find the instance of
+// such a plugin in a state by calling its
+// [`find`](#state.Plugin.find) method.
 class Plugin {
   // :: (Object)
   // Create a plugin.
@@ -35,13 +36,15 @@ class Plugin {
   //     A set of plugin-specific configuration parameters used by
   //     this plugin.
   //
-  //     dependencies: ?[Plugin]
+  //     dependencies:: ?[Plugin]
   //     A set of plugins that should automatically be added to the
   //     plugin set when this plugin is added.
   constructor(options, root) {
     // :: EditorProps
+    // The props exported by this plugin.
     this.props = options.props || {}
     // :: Object
+    // The plugin's configuration object.
     this.config = options.config || {}
     this.options = options
     this.root = root || this
@@ -72,9 +75,10 @@ exports.Plugin = Plugin
 // of this type.
 //
 //   init:: (config: Object, instance: EditorState) → T
-//   Initialize the value of this field. Note that `instance` is a
-//   half-initialized state instance, and will not have values for any
-//   fields initialzed after this one.
+//   Initialize the value of this field. `config` will be the object
+//   passed to [`EditorState.create`](#state.EditorState^create). Note
+//   that `instance` is a half-initialized state instance, and will
+//   not have values for any fields initialzed after this one.
 //
 //   applyAction:: (state: EditorState, action: Action) → T
 //   Apply the given action to this state field, producing a new field
