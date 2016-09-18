@@ -1,4 +1,4 @@
-const {EditorState, TextSelection, Plugin} = require("../src")
+const {EditorState, TextSelection, Plugin} = require("../dist")
 const {schema, eq, doc, p} = require("prosemirror-model/test/build")
 const ist = require("ist")
 
