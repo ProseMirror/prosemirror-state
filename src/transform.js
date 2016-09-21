@@ -44,7 +44,7 @@ class EditorTransform extends Transform {
     let {$from, $to, from, to, node: selNode} = this.selection
 
     if (node && node.isInline && inheritMarks !== false)
-      node = node.mark(this.state.storedMarks || this.doc.marksAt(from))
+      node = node.mark(this.state.storedMarks || this.doc.marksAt(from, to > from))
     let fragment = Fragment.from(node)
 
     if (selNode && selNode.isTextblock && node && node.isInline) {
@@ -89,7 +89,7 @@ class EditorTransform extends Transform {
       ;({from, to} = this.selection)
     }
 
-    let node = text ? this.state.schema.text(text, this.state.storedMarks || this.doc.marksAt(from)) : null
+    let node = text ? this.state.schema.text(text, this.state.storedMarks || this.doc.marksAt(from, to > from)) : null
     if (useSel)
       this.replaceSelection(node, false)
     else
