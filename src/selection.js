@@ -200,10 +200,9 @@ class NodeSelection extends Selection {
   }
 
   map(doc, mapping) {
-    let $from = doc.resolve(mapping.map(this.from, 1))
-    let to = mapping.map(this.to, -1)
-    let node = $from.nodeAfter
-    if (node && to == $from.pos + node.nodeSize && isSelectable(node))
+    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
+    let $from = doc.resolve(from.pos), node = $from.nodeAfter
+    if (!from.deleted && !to.deleted && node && to.pos == from.pos + node.nodeSize && isSelectable(node))
       return new NodeSelection($from)
     return Selection.near($from)
   }
