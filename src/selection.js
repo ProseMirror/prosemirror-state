@@ -187,8 +187,7 @@ exports.TextSelection = TextSelection
 class NodeSelection extends Selection {
   // :: (ResolvedPos)
   // Create a node selection. Does not verify the validity of its
-  // argument. Use `ProseMirror.setNodeSelection` for an easier,
-  // error-checking way to create a node selection.
+  // argument.
   constructor($from) {
     let $to = $from.plusOne()
     super($from, $to)
