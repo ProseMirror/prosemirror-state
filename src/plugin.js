@@ -3,6 +3,14 @@ function copyObj(from, to) {
   return to
 }
 
+const ids = Object.create(null)
+
+function getID(name) {
+  if (name in ids) return name + "$" + ++ids[name]
+  ids[name] = 0
+  return name + "$"
+}
+
 // ::- Plugins wrap extra functionality that can be added to an
 // editor. They can define new [state fields](#state.StateField), and
 // add [view props](#view.EditorProps).
@@ -16,10 +24,9 @@ function copyObj(from, to) {
 // derive different configurations from it using
 // [`configure`](#state.Plugin.configure). This creates a _unique_
 // plugin, which means that an error is raised when multiple instances
-// are added to a single editor. This is appropriate if your plugin
-// defines state fields, for example. You can find the instance of
-// such a plugin in a state by calling its
-// [`find`](#state.Plugin.find) method.
+// are added to a single editor. You can find the instance of such a
+// plugin in a state by calling its [`find`](#state.Plugin.find)
+// method.
 class Plugin {
   // :: (Object)
   // Create a plugin.
@@ -29,8 +36,12 @@ class Plugin {
   //     props:: ?EditorProps
   //     The [view props](#view.EditorProps) added by this plugin.
   //
-  //     stateFields:: ?Object<StateField>
-  //     Extra [state fields](#state.StateField) defined by this plugin.
+  //     state:: ?StateField
+  //     A [state field](#state.StateField) defined by this plugin.
+  //
+  //     name:: ?string
+  //     The name of the plugin. Used for debug purposes, and to
+  //     derive a property name for the plugin's state field, if any.
   //
   //     config:: ?Object
   //     A set of plugin-specific configuration parameters used by
@@ -39,7 +50,7 @@ class Plugin {
   //     dependencies:: ?[Plugin]
   //     A set of plugins that should automatically be added to the
   //     plugin set when this plugin is added.
-  constructor(options, root) {
+  constructor(options, id) {
     // :: EditorProps
     // The props exported by this plugin.
     this.props = options.props || {}
@@ -47,7 +58,7 @@ class Plugin {
     // The plugin's configuration object.
     this.config = options.config || {}
     this.options = options
-    this.root = root || this
+    this.id = id || getID(options.name || "plugin")
   }
 
   // :: (Object) → Plugin
@@ -57,7 +68,7 @@ class Plugin {
   configure(config) {
     return new Plugin(copyObj({
       config: copyObj(config, copyObj(this.config, {}))
-    }, copyObj(this.options, {})), this.root)
+    }, copyObj(this.options, {})), this.id)
   }
 
   // :: (EditorState) → ?Plugin
@@ -65,14 +76,17 @@ class Plugin {
   // exists. Note that this only works if the plugin in the state is
   // either this exact plugin, or they both share a common ancestor
   // through [`configure`](#state.Plugin.configure) calls.
-  find(state) { return state._config.findPlugin(this) }
+  find(state) { return state.config.findPlugin(this) }
+
+  // :: (EditorState) → any
+  // Get the state field for this plugin.
+  getState(state) { return state[this.id] }
 }
 exports.Plugin = Plugin
 
 // StateField:: interface<T>
-// A plugin may provide a set of state fields, as an object (under its
-// `stateFields` property) mapping field names to description objects
-// of this type.
+// A plugin may provide a state field (under its `state` property)
+// of this type, which describes the state it wants to keep.
 //
 //   init:: (config: Object, instance: EditorState) → T
 //   Initialize the value of this field. `config` will be the object

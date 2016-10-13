@@ -27,8 +27,8 @@ class FieldDesc {
 const baseFields = [
   new FieldDesc("doc", {
     init(config) { return config.doc || config.schema.nodes.doc.createAndFill() },
-    applyAction(state, action) {
-      return action.type == "transform" ? action.transform.doc : state.doc
+    applyAction(action, doc) {
+      return action.type == "transform" ? action.transform.doc : doc
     },
     toJSON(value) { return value.toJSON() },
     fromJSON(config, json) { return Node.fromJSON(config.schema, json) }
@@ -36,12 +36,12 @@ const baseFields = [
 
   new FieldDesc("selection", {
     init(config, instance) { return config.selection || Selection.atStart(instance.doc) },
-    applyAction(state, action) {
+    applyAction(action, selection) {
       if (action.type == "transform")
-        return action.selection || state.selection.map(action.transform.doc, action.transform.mapping)
+        return action.selection || selection.map(action.transform.doc, action.transform.mapping)
       if (action.type == "selection")
         return action.selection
-      return state.selection
+      return selection
     },
     toJSON(value) { return value.toJSON() },
     fromJSON(_, json, instance) { return Selection.fromJSON(instance.doc, json) }
@@ -49,21 +49,20 @@ const baseFields = [
 
   new FieldDesc("storedMarks", {
     init() { return null },
-    applyAction(state, action) {
-      if (action.type == "transform") return action.selection ? null : state.storedMarks
+    applyAction(action, storedMarks, state) {
+      if (action.type == "transform") return action.selection ? null : storedMarks
       if (action.type == "selection") return null
       if (action.type == "addStoredMark" && state.selection.empty)
-        return action.mark.addToSet(state.storedMarks || currentMarks(state.doc, state.selection))
+        return action.mark.addToSet(storedMarks || currentMarks(state.doc, state.selection))
       if (action.type == "removeStoredMark" && state.selection.empty)
-        return action.markType.removeFromSet(state.storedMarks || currentMarks(state.doc, state.selection))
-      return state.storedMarks
+        return action.markType.removeFromSet(storedMarks || currentMarks(state.doc, state.selection))
+      return storedMarks
     }
   }),
 
   new FieldDesc("view", {
     init() { return ViewState.initial },
-    applyAction(state, action) {
-      let view = state.view
+    applyAction(action, view) {
       if (action.type == "transform")
         return new ViewState(view.inDOMChange,
                              view.domChangeMapping && view.domChangeMapping.copy().appendMapping(action.transform.mapping),
@@ -100,18 +99,13 @@ class Configuration {
     }
 
     this.plugins.push(plugin)
-    let fields = plugin.options.stateFields
-    if (fields) for (let name in fields) if (fields.hasOwnProperty(name)) {
-      if (name == "_config" || EditorState.prototype.hasOwnProperty(name) ||
-          this.fields.some(field => field.name == name))
-        throw new Error("Conflicting definition for state property " + name)
-      this.fields.push(new FieldDesc(name, fields[name]))
-    }
+    let field = plugin.options.state
+    if (field) this.fields.push(new FieldDesc(plugin.id, field))
   }
 
   findPlugin(plugin) {
     for (let i = 0; i < this.plugins.length; i++)
-      if (this.plugins[i].root == plugin.root) return this.plugins[i]
+      if (this.plugins[i].id == plugin.id) return this.plugins[i]
   }
 }
 
@@ -124,7 +118,7 @@ class Configuration {
 // additional pieces of state.
 class EditorState {
   constructor(config) {
-    this._config = config
+    this.config = config
   }
 
   // doc:: Node
@@ -140,21 +134,23 @@ class EditorState {
   // :: Schema
   // The schema of the state's document.
   get schema() {
-    return this._config.schema
+    return this.config.schema
   }
 
   // :: [Plugin]
   // The plugins that are active in this state.
   get plugins() {
-    return this._config.plugins
+    return this.config.plugins
   }
 
   // :: (Action) → EditorState
   // Apply the given action to produce a new state.
   applyAction(action) {
-    let newInstance = new EditorState(this._config), fields = this._config.fields
-    for (let i = 0; i < fields.length; i++)
-      newInstance[fields[i].name] = fields[i].applyAction(this, action)
+    let newInstance = new EditorState(this.config), fields = this.config.fields
+    for (let i = 0; i < fields.length; i++) {
+      let field = fields[i]
+      newInstance[field.name] = field.applyAction(action, this[field.name], this)
+    }
     return newInstance
   }
 
@@ -190,7 +186,7 @@ class EditorState {
     let fields = $config.fields, instance = new EditorState($config)
     for (let i = 0; i < fields.length; i++) {
       let name = fields[i].name
-      if (this._config.fields.some(f => f.name == name))
+      if (this.config.fields.some(f => f.name == name))
         instance[name] = this[name]
       else
         instance[name] = fields[i].init(config, instance)
@@ -200,11 +196,11 @@ class EditorState {
 
   // :: (?Object) → Object
   // Convert this state to a JSON-serializable object. When the
-  // `ignore` option is given, it is interpreted as an array of field
-  // names that should not be serialized.
+  // `ignore` option is given, it is interpreted as an array of
+  // plugins whose state should not be serialized.
   toJSON(options) {
-    let result = {}, fields = this._config.fields
-    let ignore = options && options.ignore || []
+    let result = {}, fields = this.config.fields
+    let ignore = (options && options.ignore || []).map(p => p.id)
     for (let i = 0; i < fields.length; i++) {
       let field = fields[i]
       let json = field.toJSON && ignore.indexOf(field.name) == -1 ? field.toJSON(this[field.name]) : null
