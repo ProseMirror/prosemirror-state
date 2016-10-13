@@ -35,6 +35,9 @@ class Plugin {
   //
   //     props:: ?EditorProps
   //     The [view props](#view.EditorProps) added by this plugin.
+  //     Note that the [`onAction`](#view.EditorProps.onAction) and
+  //     [`state`](#view.EditorProps.state] props can't be defined by
+  //     plugins, only by the main props object.
   //
   //     state:: ?StateField
   //     A [state field](#state.StateField) defined by this plugin.
