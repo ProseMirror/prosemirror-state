@@ -1,32 +1,6 @@
-function copyObj(from, to) {
-  for (let prop in from) to[prop] = from[prop]
-  return to
-}
-
-const ids = Object.create(null)
-
-function getID(name) {
-  if (name in ids) return name + "$" + ++ids[name]
-  ids[name] = 0
-  return name + "$"
-}
-
 // ::- Plugins wrap extra functionality that can be added to an
 // editor. They can define new [state fields](#state.StateField), and
 // add [view props](#view.EditorProps).
-//
-// There are two ways to use plugins. The easiest way is to have a
-// factory function that simply creates instances of this class. This
-// creates a non-unique plugin, of which multiple instances can be
-// added to a single editor.
-//
-// The alternative is to have a single plugin instance, and optionally
-// derive different configurations from it using
-// [`configure`](#state.Plugin.configure). This creates a _unique_
-// plugin, which means that an error is raised when multiple instances
-// are added to a single editor. You can find the instance of such a
-// plugin in a state by calling its [`find`](#state.Plugin.find)
-// method.
 class Plugin {
   // :: (Object)
   // Create a plugin.
@@ -37,59 +11,45 @@ class Plugin {
   //     The [view props](#view.EditorProps) added by this plugin.
   //     Note that the [`onAction`](#view.EditorProps.onAction) and
   //     [`state`](#view.EditorProps.state] props can't be defined by
-  //     plugins, only by the main props object.
+  //     plugins, only by the main props object. Props that are
+  //     functions will be bound to have the plugin instance as their
+  //     `this` binding.
   //
   //     state:: ?StateField
   //     A [state field](#state.StateField) defined by this plugin.
   //
-  //     name:: ?string
-  //     The name of the plugin. Used for debug purposes, and to
-  //     derive a property name for the plugin's state field, if any.
-  //
-  //     config:: ?Object
-  //     A set of plugin-specific configuration parameters used by
-  //     this plugin.
-  //
-  //     dependencies:: ?[Plugin]
-  //     A set of plugins that should automatically be added to the
-  //     plugin set when this plugin is added.
-  constructor(options, id) {
+  //     key:: ?PluginKey
+  //     Can optionally be used to make this a keyed plugin. You can
+  //     have only one plugin with a given key in a given state, but
+  //     it is possible to access the plugin's configuration and state
+  //     through the key, without having access to the plugin instance
+  //     itself.
+  constructor(options) {
     // :: EditorProps
     // The props exported by this plugin.
-    this.props = options.props || {}
+    this.props = {}
+    if (options.props) for (let prop in options.props) {
+      let val = options.props[prop]
+      if (val instanceof Function) val = val.bind(this)
+      this.props[prop] = val
+    }
     // :: Object
     // The plugin's configuration object.
-    this.config = options.config || {}
     this.options = options
-    this.id = id || getID(options.name || "plugin")
+    this.key = options.key ? options.key.key : createKey("plugin")
   }
-
-  // :: (Object) → Plugin
-  // Create a reconfigured instance of this plugin. Any config fields
-  // not listed in the given object are inherited from the original
-  // configuration.
-  configure(config) {
-    return new Plugin(copyObj({
-      config: copyObj(config, copyObj(this.config, {}))
-    }, copyObj(this.options, {})), this.id)
-  }
-
-  // :: (EditorState) → ?Plugin
-  // Find the instance of this plugin in a given editor state, if it
-  // exists. Note that this only works if the plugin in the state is
-  // either this exact plugin, or they both share a common ancestor
-  // through [`configure`](#state.Plugin.configure) calls.
-  find(state) { return state.config.findPlugin(this) }
 
   // :: (EditorState) → any
   // Get the state field for this plugin.
-  getState(state) { return state[this.id] }
+  getState(state) { return state[this.key] }
 }
 exports.Plugin = Plugin
 
 // StateField:: interface<T>
-// A plugin may provide a state field (under its `state` property)
-// of this type, which describes the state it wants to keep.
+// A plugin may provide a state field (under its `state` property) of
+// this type, which describes the state it wants to keep. Functions
+// provided here are always called with the plugin instance as their
+// `this` binding.
 //
 //   init:: (config: Object, instance: EditorState) → T
 //   Initialize the value of this field. `config` will be the object
@@ -109,3 +69,31 @@ exports.Plugin = Plugin
 //   fromJSON:: ?(config: Object, value: *, state: EditorState) → T
 //   Deserialize the JSON representation of this field. Note that the
 //   `state` argument is again a half-initialized state.
+
+const keys = Object.create(null)
+
+function createKey(name) {
+  if (name in keys) return name + "$" + ++keys[name]
+  keys[name] = 0
+  return name + "$"
+}
+
+// ::- A key is used to [tag](#state.Plugin.constructor.options.key)
+// plugins in a way that makes it possible to find them, given an
+// editor state. Assigning a key does mean only one plugin of that
+// type can be active in a state.
+class PluginKey {
+  // :: (?string)
+  // Create a plugin key.
+  constructor(name = "key") { this.key = createKey(name) }
+
+  // :: (EditorState) → ?Plugin
+  // Get the active plugin with this key, if any, from an editor
+  // state.
+  get(state) { return state.config.pluginsByKey[this.key] }
+
+  // :: (EditorState) → ?any
+  // Get the plugin's state from an editor state.
+  getState(state) { return state[this.key] }
+}
+exports.PluginKey = PluginKey

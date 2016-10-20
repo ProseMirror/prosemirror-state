@@ -14,13 +14,15 @@ class ViewState {
 ViewState.initial = new ViewState(null, null, false)
 exports.ViewState = ViewState
 
+function bind(f, self) {
+  return !self || !f ? f : f.bind(self)
+}
+
 class FieldDesc {
-  constructor(name, desc) {
+  constructor(name, desc, self) {
     this.name = name
-    this.init = desc.init
-    this.applyAction = desc.applyAction
-    this.toJSON = desc.toJSON
-    this.fromJSON = desc.fromJSON
+    this.init = bind(desc.init, self)
+    this.applyAction = bind(desc.applyAction, self)
   }
 }
 
@@ -29,9 +31,7 @@ const baseFields = [
     init(config) { return config.doc || config.schema.nodes.doc.createAndFill() },
     applyAction(action, doc) {
       return action.type == "transform" ? action.transform.doc : doc
-    },
-    toJSON(value) { return value.toJSON() },
-    fromJSON(config, json) { return Node.fromJSON(config.schema, json) }
+    }
   }),
 
   new FieldDesc("selection", {
@@ -42,9 +42,7 @@ const baseFields = [
       if (action.type == "selection")
         return action.selection
       return selection
-    },
-    toJSON(value) { return value.toJSON() },
-    fromJSON(_, json, instance) { return Selection.fromJSON(instance.doc, json) }
+    }
   }),
 
   new FieldDesc("storedMarks", {
@@ -82,30 +80,22 @@ function currentMarks(doc, selection) {
   return selection.head == null ? Mark.none : doc.marksAt(selection.head)
 }
 
+// Object wrapping the part of a state object that stays the same
+// across actions. Stored in the state's `config` property.
 class Configuration {
   constructor(schema, plugins) {
     this.schema = schema
     this.fields = baseFields.slice()
     this.plugins = []
-    if (plugins) plugins.forEach(plugin => this.addPlugin(plugin))
-  }
-
-  addPlugin(plugin) {
-    let deps = plugin.options.dependencies, found
-    if (deps) deps.forEach(plugin => this.addPlugin(plugin))
-    if (found = this.findPlugin(plugin)) {
-      if (found == plugin) return
-      throw new RangeError("Adding different configurations of the same plugin")
-    }
-
-    this.plugins.push(plugin)
-    let field = plugin.options.state
-    if (field) this.fields.push(new FieldDesc(plugin.id, field))
-  }
-
-  findPlugin(plugin) {
-    for (let i = 0; i < this.plugins.length; i++)
-      if (this.plugins[i].id == plugin.id) return this.plugins[i]
+    this.pluginsByKey = Object.create(null)
+    if (plugins) plugins.forEach(plugin => {
+      if (this.pluginsByKey[plugin.key])
+        throw new RangeError("Adding different instances of a keyed plugin (" + plugin.key + ")")
+      this.plugins.push(plugin)
+      this.pluginsByKey[plugin.key] = plugin
+      if (plugin.options.state)
+        this.fields.push(new FieldDesc(plugin.key, plugin.options.state, plugin))
+    })
   }
 }
 
@@ -186,42 +176,54 @@ class EditorState {
     let fields = $config.fields, instance = new EditorState($config)
     for (let i = 0; i < fields.length; i++) {
       let name = fields[i].name
-      if (this.config.fields.some(f => f.name == name))
-        instance[name] = this[name]
-      else
-        instance[name] = fields[i].init(config, instance)
+      instance[name] = this.hasOwnProperty(name) ? this[name] : fields[i].init(config, instance)
     }
     return instance
   }
 
-  // :: (?Object) → Object
-  // Convert this state to a JSON-serializable object. When the
-  // `ignore` option is given, it is interpreted as an array of
-  // plugins whose state should not be serialized.
-  toJSON(options) {
-    let result = {}, fields = this.config.fields
-    let ignore = (options && options.ignore || []).map(p => p.id)
-    for (let i = 0; i < fields.length; i++) {
-      let field = fields[i]
-      let json = field.toJSON && ignore.indexOf(field.name) == -1 ? field.toJSON(this[field.name]) : null
-      if (json != null) result[field.name] = json
+  // :: (?Object<Plugin>) → Object
+  // Serialize this state to JSON. If you want to serialize the state
+  // of plugins, pass an object mapping property names to use in the
+  // resulting JSON object to plugin objects.
+  toJSON(pluginFields) {
+    let result = {doc: this.doc.toJSON(), selection: this.selection.toJSON()}
+    if (pluginFields) for (let prop in pluginFields) {
+      if (prop == "doc" || prop == "selection")
+        throw new RangeError("The JSON fields `doc` and `selection` are reserved")
+      let plugin = pluginFields[prop], state = plugin.options.state
+      if (state && state.toJSON) result[prop] = state.toJSON.call(plugin, this[plugin.key])
     }
     return result
   }
 
-  // :: (Object, Object) → EditorState
+  // :: (Object, Object, ?Object<Plugin>) → EditorState
   // Deserialize a JSON representation of a state. `config` should
   // have at least a `schema` field, and should contain array of
-  // plugins to initialize the state with. It is also passed as
-  // starting configuration for fields that were not serialized.
-  static fromJSON(config, json) {
+  // plugins to initialize the state with. `pluginFields` can be used
+  // to deserialize the state of plugins, by associating plugin
+  // instances with the property names they use in the JSON object.
+  static fromJSON(config, json, pluginFields) {
     if (!config.schema) throw new RangeError("Required config field 'schema' missing")
-    let $config = new Configuration(config.schema, config.plugins), fields = $config.fields, instance = new EditorState($config)
-    for (let i = 0; i < fields.length; i++) {
-      let field = fields[i], value = json[field.name]
-      if (value == null || !field.fromJSON) instance[field.name] = field.init(config, instance)
-      else instance[field.name] = field.fromJSON(config, value, instance)
-    }
+    let $config = new Configuration(config.schema, config.plugins)
+    let instance = new EditorState($config)
+    $config.fields.forEach(field => {
+      if (field.name == "doc") {
+        instance.doc = Node.fromJSON(config.schema, json.doc)
+      } else if (field.name == "selection") {
+        instance.selection = Selection.fromJSON(instance.doc, json.selection)
+      } else {
+        if (pluginFields) for (let prop in pluginFields) {
+          let plugin = pluginFields[prop], state = plugin.options.state
+          if (plugin.key == field.name && state && state.fromJSON &&
+              Object.prototype.hasOwnProperty.call(json, prop)) {
+            // This field belongs to a plugin mapped to a JSON field, read it from there.
+            instance[field.name] = state.fromJSON.call(plugin, config, json[prop], instance)
+            return
+          }
+        }
+        instance[field.name] = field.init(config, instance)
+      }
+    })
     return instance
   }
 }

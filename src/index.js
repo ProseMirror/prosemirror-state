@@ -7,4 +7,4 @@ exports.EditorTransform = require("./transform").EditorTransform
 
 exports.EditorState = require("./state").EditorState
 
-exports.Plugin = require("./plugin").Plugin
+;({Plugin: exports.Plugin, PluginKey: exports.PluginKey} = require("./plugin"))
