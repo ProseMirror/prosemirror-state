@@ -78,7 +78,7 @@ function createKey(name) {
   return name + "$"
 }
 
-// ::- A key is used to [tag](#state.Plugin.constructor.options.key)
+// ::- A key is used to [tag](#state.Plugin.constructor^options.key)
 // plugins in a way that makes it possible to find them, given an
 // editor state. Assigning a key does mean only one plugin of that
 // type can be active in a state.
