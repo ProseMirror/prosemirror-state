@@ -108,7 +108,8 @@ class EditorTransform extends Transform {
   action(options) {
     let action = {type: "transform",
                   transform: this,
-                  selection: this.selectionSet ? this.selection : null}
+                  selection: this.selectionSet ? this.selection : null,
+                  time: Date.now()}
     if (options) for (let prop in options) action[prop] = options[prop]
     return action
   }

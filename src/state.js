@@ -250,6 +250,9 @@ exports.EditorState = EditorState
 //   If given, this selection will be used as the new selection. If
 //   not, the old selection is mapped through the transform.
 //
+//   time:: number
+//   The timestamp at which the change was made.
+//
 //   scrollIntoView:: ?bool
 //   When true, the next display update will scroll the cursor into
 //   view.
