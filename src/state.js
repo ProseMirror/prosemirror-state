@@ -139,7 +139,7 @@ class EditorState {
     let newInstance = new EditorState(this.config), fields = this.config.fields
     for (let i = 0; i < fields.length; i++) {
       let field = fields[i]
-      newInstance[field.name] = field.applyAction(action, this[field.name], this)
+      newInstance[field.name] = field.applyAction(action, this[field.name], this, newInstance)
     }
     return newInstance
   }

@@ -57,10 +57,11 @@ exports.Plugin = Plugin
 //   that `instance` is a half-initialized state instance, and will
 //   not have values for any fields initialzed after this one.
 //
-//   applyAction:: (state: EditorState, action: Action) → T
+//   applyAction:: (action: Action, value: T, oldState: EditorState, newState: EditorState) → T
 //   Apply the given action to this state field, producing a new field
-//   value. Note that the `state` argument is the _old_ state, before
-//   the action was applied.
+//   value. Note that the `newState` argument is a partially
+//   constructed state does not yet contain the state from plugins
+//   coming after this plugin.
 //
 //   toJSON:: ?(value: T) → *
 //   Convert this field to JSON. Optional, can be left off to disable
