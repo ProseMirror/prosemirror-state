@@ -10,7 +10,7 @@ class Plugin {
   //     props:: ?EditorProps
   //     The [view props](#view.EditorProps) added by this plugin.
   //     Note that the [`onAction`](#view.EditorProps.onAction) and
-  //     [`state`](#view.EditorProps.state] props can't be defined by
+  //     [`state`](#view.EditorProps.state) props can't be defined by
   //     plugins, only by the main props object. Props that are
   //     functions will be bound to have the plugin instance as their
   //     `this` binding.
