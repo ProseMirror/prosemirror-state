@@ -1,4 +1,4 @@
-const {Fragment} = require("prosemirror-model")
+const {Fragment, Slice, Node} = require("prosemirror-model")
 const {Transform, insertPoint} = require("prosemirror-transform")
 const {Selection} = require("./selection")
 
@@ -36,48 +36,99 @@ class EditorTransform extends Transform {
     return this
   }
 
-  // :: (?Node, ?bool) → EditorTransform
-  // Replace the selection with the given node, or delete it if `node`
-  // is null. When `inheritMarks` is true and the node is an inline
-  // node, it inherits the marks from the place where it is inserted.
-  replaceSelection(node, inheritMarks) {
-    let {$from, $to, from, to, node: selNode} = this.selection
+  // :: (?union<Node, Slice>, ?bool) → EditorTransform
+  // Replace the selection with the given node or slice, or delete it
+  // if `content` is null. When `inheritMarks` is true and the content
+  // is inline, it inherits the marks from the place where it is
+  // inserted.
+  replaceSelection(content, inheritMarks) {
+    let slice = content
+    if (!content) slice = Slice.empty
+    else if (content instanceof Node) slice = new Slice(Fragment.from(content), 0, 0)
 
-    if (node && node.isInline && inheritMarks !== false)
-      node = node.mark(this.state.storedMarks || this.doc.marksAt(from, to > from))
-    let fragment = Fragment.from(node)
+    if (!slice.size) return this.deleteSelection()
 
-    if (selNode && selNode.isTextblock && node && node.isInline) {
-      // Putting inline stuff onto a selected textblock puts it
-      // inside, so cut off the sides
-      from++
-      to--
-    } else if (selNode) {
-      let depth = $from.depth
-      // This node can not simply be removed/replaced. Remove its parent as well
-      while (depth && $from.node(depth).childCount == 1 &&
-             !$from.node(depth).canReplace($from.index(depth), $to.indexAfter(depth), fragment)) {
-        depth--
+    let {from, to, $from} = this.selection
+    let flat = !(slice.openLeft || slice.openRight) && (slice.content.firstChild.isInline ? "inline" : "block")
+
+    if (inheritMarks !== false && flat == "inline") {
+      let marks = this.state.storedMarks || this.doc.marksAt(from, to > from), marked = []
+      slice.content.forEach(node => marked.push(node.mark(marks)))
+      slice = new Slice(Fragment.from(marked), slice.openLeft, slice.openRight)
+    }
+
+    let maybeDropEmpty = flat != "inline" && $from.parentOffset == 0 && to == $from.end()
+    let insertIntoTextblock = $from.parent.isTextblock && !(maybeDropEmpty && !$from.parent.type.spec.defining)
+
+    // If we're inserting into a non-textblock node (possibly because
+    // the textblock around the selection wasn't flagged as defining)
+    // and the slice has open nodes on the left, close those nodes
+    // until a non-defining non-textblock node is found.
+    if (!insertIntoTextblock && !flat) {
+      let leaveOpen = slice.openLeft, openNodes = []
+      for (let frag = slice.content, d = 0, next; d < slice.openLeft; d++) {
+        openNodes.push(next = frag.firstChild)
+        frag = next.content
       }
-      if (depth < $from.depth) {
-        from = $from.before(depth + 1)
-        to = $from.after(depth + 1)
+      for (; leaveOpen > 0; leaveOpen--) {
+        let parent = openNodes[leaveOpen - 1]
+        if (!(parent.isTextblock || parent.type.spec.defining)) break
       }
-    } else if (node && from == to) {
-      let point = insertPoint(this.doc, from, node.type, node.attrs)
+      if (leaveOpen < slice.openLeft)
+        slice = new Slice(closeFragment(slice.content, 0, slice.openLeft, leaveOpen), leaveOpen, slice.openRight)
+    }
+
+    // If we're not inserting flat inline content, and the selection
+    // spans a whole node, drop any parent nodes that are non-defining
+    // or don't fit the content (except if we're inserting a block
+    // that fits into that parent node).
+    if (maybeDropEmpty) {
+      let innerFragment = slice.content
+      for (let i = 0; i < slice.openLeft; i++) innerFragment = innerFragment.firstChild.content
+
+      for (let d = $from.depth; d > 0; d--) {
+        let parent = $from.node(d)
+        if (from != $from.start(d) || to != $from.end(d) ||
+            ((flat != "block" || parent.type.spec.defining) &&
+             parent.canReplace($from.index(d), $from.indexAfter(d), slice.content)))
+          break
+        from--
+        to++
+      }
+    }
+
+    // When inserting a single block into an empty selection, allow
+    // the selection to move out of its parent when it is at the side,
+    // if that brings us to a position where the node can be inserted.
+    if (from == to && flat == "block" && slice.content.childCount == 1) {
+      let point = insertPoint(this.doc, from, slice.content.firstChild.type, slice.content.firstChild.attrs)
       if (point != null) from = to = point
     }
 
-    this.replaceWith(from, to, fragment)
+    this.replace(from, to, slice)
+    // For non-fully-inline replacements, manually move the selection
+    // to the proper position.
     let map = this.mapping.maps[this.mapping.maps.length - 1]
-    this.setSelection(Selection.near(this.doc.resolve(map.map(to)), node && node.isInline ? -1 : 1))
+    let lastNode = slice.content.lastChild
+    for (let i = 0; i < slice.openRight; i++) lastNode = lastNode.lastChild
+    this.setSelection(Selection.near(this.doc.resolve(map.map(to)), lastNode.isInline ? -1 : 1))
     return this
   }
 
   // :: () → EditorTransform
   // Delete the selection.
   deleteSelection() {
-    return this.replaceSelection()
+    let {from, to, $from} = this.selection
+    // When this deletes the whole content of a node that can't be
+    // empty, delete that parent node too, and so on for the next
+    // parent.
+    for (let d = $from.depth; d > 0; d--) {
+      if (from != $from.start(d) || to != $from.end(d) ||
+          $from.node(d).contentMatchAt(0).validEnd()) break
+      from--
+      to++
+    }
+    return this.delete(from, to)
   }
 
   // :: (string, from: ?number, to: ?number) → EditorTransform
@@ -122,3 +173,13 @@ class EditorTransform extends Transform {
   }
 }
 exports.EditorTransform = EditorTransform
+
+function closeFragment(fragment, depth, oldOpen, newOpen, parent) {
+  if (depth < oldOpen) {
+    let first = fragment.firstChild
+    fragment = fragment.replaceChild(0, first.copy(closeFragment(first.content, depth + 1, oldOpen, newOpen, first)))
+  }
+  if (depth > newOpen)
+    fragment = parent.contentMatchAt(0).fillBefore(fragment).append(fragment)
+  return fragment
+}
