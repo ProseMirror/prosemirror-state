@@ -28,7 +28,7 @@ exports.TestState = class TestState {
   }
 
   type(text) {
-    this.apply(this.tr.replaceSelection(this.state.schema.text(text)))
+    this.apply(this.tr.insertText(text))
   }
 
   deleteSelection() {
