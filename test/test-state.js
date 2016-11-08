@@ -45,7 +45,7 @@ describe("State", () => {
 
   it("can be serialized to JSON", () => {
     let state = EditorState.create({plugins: [messageCountPlugin], doc: doc(p("ok"))})
-    state = state.applyAction(new TextSelection(state.doc.resolve(3)).action())
+    state = state.applyAction(TextSelection.create(state.doc, 3).action())
     let pluginProps = {count: messageCountPlugin}
     let expected = {doc: {type: "doc", content: [{type: "paragraph", content:
                                                   [{type: "text", text: "ok"}]}]},

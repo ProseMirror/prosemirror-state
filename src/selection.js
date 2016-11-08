@@ -177,6 +177,13 @@ class TextSelection extends Selection {
   toJSON() {
     return {head: this.head, anchor: this.anchor}
   }
+
+  // :: (Node, number, ?number) → TextSelection
+  // Create a text selection from non-resolved positions.
+  static create(doc, anchor, head = anchor) {
+    let $anchor = doc.resolve(anchor)
+    return new this($anchor, head == anchor ? $anchor : doc.resolve(head))
+  }
 }
 exports.TextSelection = TextSelection
 
@@ -210,6 +217,12 @@ class NodeSelection extends Selection {
   toJSON() {
     return {node: this.from, after: this.to}
   }
+
+  // :: (Node, number, ?number) → TextSelection
+  // Create a node selection from non-resolved positions.
+  static create(doc, from) {
+    return new this(doc.resolve(from))
+  }
 }
 exports.NodeSelection = NodeSelection
 
@@ -219,14 +232,14 @@ exports.NodeSelection = NodeSelection
 // position where the search starts. When `text` is true, only return
 // text selections.
 function findSelectionIn(doc, node, pos, index, dir, text) {
-  if (node.isTextblock) return new TextSelection(doc.resolve(pos))
+  if (node.isTextblock) return TextSelection.create(doc, pos)
   for (let i = index - (dir > 0 ? 0 : 1); dir > 0 ? i < node.childCount : i >= 0; i += dir) {
     let child = node.child(i)
     if (!child.isLeaf) {
       let inner = findSelectionIn(doc, child, pos + dir, dir < 0 ? child.childCount : 0, dir, text)
       if (inner) return inner
     } else if (!text && isSelectable(child)) {
-      return new NodeSelection(doc.resolve(pos - (dir < 0 ? child.nodeSize : 0)))
+      return NodeSelection.create(doc, pos - (dir < 0 ? child.nodeSize : 0))
     }
     pos += child.nodeSize * dir
   }

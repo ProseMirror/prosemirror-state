@@ -36,13 +36,12 @@ exports.TestState = class TestState {
   }
 
   textSel(anchor, head) {
-    let sel = new TextSelection(this.state.doc.resolve(anchor),
-                                head == null ? undefined : this.state.doc.resolve(head))
+    let sel = TextSelection.create(this.state.doc, anchor, head)
     this.state = this.state.applyAction(sel.action())
   }
 
   nodeSel(pos) {
-    let sel = new NodeSelection(this.state.doc.resolve(pos))
+    let sel = NodeSelection.create(this.state.doc, pos)
     this.state = this.state.applyAction(sel.action())
   }
 
