@@ -3,7 +3,8 @@
    NodeSelection: exports.NodeSelection,
    isSelectable: exports.isSelectable} = require("./selection"))
 
-exports.EditorTransform = require("./transform").EditorTransform
+;({EditorTransform: exports.EditorTransform,
+   extendTransformAction: exports.extendTransformAction} = require("./transform"))
 
 exports.EditorState = require("./state").EditorState
 

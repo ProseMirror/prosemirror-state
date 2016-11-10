@@ -253,6 +253,13 @@ exports.EditorState = EditorState
 //   time:: number
 //   The timestamp at which the change was made.
 //
+//   sealed: ?bool
+//   Should be set to true when this action's transform should not be
+//   changed after the fact with
+//   [`extendTransformAction`](#state.extendTransformAction) (for
+//   example when the action carries metadata that makes assumptions
+//   about the transform). Defaults to false.
+//
 //   scrollIntoView:: ?bool
 //   When true, the next display update will scroll the cursor into
 //   view.

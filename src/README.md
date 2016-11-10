@@ -16,6 +16,12 @@ state) by applying [actions](#state.Action) to it.
 @RemoveStoredMarkAction
 @EditorTransform
 
+It is possible, when dispatching an action, to change it before
+applying it. The following helper can be used to safely update
+transform actions:
+
+@extendTransformAction
+
 ### Selection
 
 A ProseMirror selection can be either a classical

@@ -110,3 +110,22 @@ function selectionToInsertionEnd(tr, startLen, bias) {
   map.forEach((_from, _to, _newFrom, newTo) => end = newTo)
   if (end != null) tr.setSelection(Selection.near(tr.doc.resolve(end), bias))
 }
+
+// :: (Action, (transform: Transform)) → Action
+// If, when dispatching actions, you need to extend a transform action
+// with additional steps, you can use this helper. It takes an action
+// and a function that extends a transform, and will update the action
+// to reflect any additional steps. It won't call the function if the
+// action is not a transform action or a
+// [sealed](#state.TransformAction.sealed) transform action.
+function extendTransformAction(action, f) {
+  if (action.type != "transform" || action.sealed) return action
+  let tr = action.transform, steps = tr.steps.length, set = tr.selectionSet
+  f(tr)
+  if (!set && tr.selectionSet)
+    action.selection = tr.selection
+  else if (action.selection && tr.steps.length > steps)
+    action.selection = action.selection.map(tr.doc, tr.mapping.slice(steps))
+  return action
+}
+exports.extendTransformAction = extendTransformAction
