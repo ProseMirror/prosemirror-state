@@ -32,7 +32,7 @@ document node is selected.
 @Selection
 @TextSelection
 @NodeSelection
-
+c
 ### Plugin System
 
 To make distributing and using extra editor functionality easier,

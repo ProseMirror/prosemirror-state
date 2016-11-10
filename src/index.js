@@ -1,7 +1,6 @@
 ;({Selection: exports.Selection,
    TextSelection: exports.TextSelection,
-   NodeSelection: exports.NodeSelection,
-   isSelectable: exports.isSelectable} = require("./selection"))
+   NodeSelection: exports.NodeSelection} = require("./selection"))
 
 ;({EditorTransform: exports.EditorTransform,
    extendTransformAction: exports.extendTransformAction} = require("./transform"))

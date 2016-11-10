@@ -129,7 +129,7 @@ class Selection {
       else return Selection.between($anchor, $head)
     } else {
       let $pos = doc.resolve(json.node), after = $pos.nodeAfter
-      if (after && json.after == json.pos + after.nodeSize && isSelectable(after)) return new NodeSelection($pos)
+      if (after && json.after == json.pos + after.nodeSize && NodeSelection.isSelectable(after)) return new NodeSelection($pos)
       else return Selection.near($pos)
     }
   }
@@ -209,7 +209,7 @@ class NodeSelection extends Selection {
   map(doc, mapping) {
     let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
     let $from = doc.resolve(from.pos), node = $from.nodeAfter
-    if (!from.deleted && !to.deleted && node && to.pos == from.pos + node.nodeSize && isSelectable(node))
+    if (!from.deleted && !to.deleted && node && to.pos == from.pos + node.nodeSize && NodeSelection.isSelectable(node))
       return new NodeSelection($from)
     return Selection.near($from)
   }
@@ -222,6 +222,13 @@ class NodeSelection extends Selection {
   // Create a node selection from non-resolved positions.
   static create(doc, from) {
     return new this(doc.resolve(from))
+  }
+
+  // :: (Node) → bool
+  // Determines whether the given node may be selected as a node
+  // selection.
+  static isSelectable(node) {
+    return !node.isText && node.type.spec.selectable !== false
   }
 }
 exports.NodeSelection = NodeSelection
@@ -238,14 +245,9 @@ function findSelectionIn(doc, node, pos, index, dir, text) {
     if (!child.isLeaf) {
       let inner = findSelectionIn(doc, child, pos + dir, dir < 0 ? child.childCount : 0, dir, text)
       if (inner) return inner
-    } else if (!text && isSelectable(child)) {
+    } else if (!text && NodeSelection.isSelectable(child)) {
       return NodeSelection.create(doc, pos - (dir < 0 ? child.nodeSize : 0))
     }
     pos += child.nodeSize * dir
   }
 }
-
-function isSelectable(node) {
-  return !node.isText && node.type.spec.selectable !== false
-}
-exports.isSelectable = isSelectable
