@@ -44,7 +44,7 @@ class EditorTransform extends Transform {
     // position after that node. If not, search forward.
     let lastNode = slice.content.lastChild
     for (let i = 0; i < slice.openRight; i++) lastNode = lastNode.lastChild
-    selectionToInsertionEnd(this, startLen, lastNode.isInline ? -1 : 1)
+    selectionToInsertionEnd(this, startLen, lastNode && lastNode.isInline ? -1 : 1)
     return this
   }
 
