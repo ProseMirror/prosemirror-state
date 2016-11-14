@@ -53,9 +53,12 @@ class EditorTransform extends Transform {
     // Move the selection to the position after the inserted content.
     // When that ended in an inline node, search backwards, to get the
     // position after that node. If not, search forward.
-    let lastNode = slice.content.lastChild
-    for (let i = 0; i < slice.openRight; i++) lastNode = lastNode.lastChild
-    selectionToInsertionEnd(this, startLen, lastNode && lastNode.isInline ? -1 : 1)
+    let lastNode = slice.content.lastChild, lastParent = null
+    for (let i = 0; i < slice.openRight; i++) {
+      lastParent = lastNode
+      lastNode = lastNode.lastChild
+    }
+    selectionToInsertionEnd(this, startLen, (lastNode ? lastNode.isInline : lastParent && lastParent.isTextblock) ? -1 : 1)
     return this
   }
 
