@@ -272,9 +272,17 @@ exports.EditorState = EditorState
 //   selection:: Selection
 //   The new selection.
 //
+//   origin:: ?string
+//   An optional string giving more information about the source of
+//   the action. The [view](##view) will set this to `"mouse"` for
+//   selection actions originating from mouse events.
+//
 //   scrollIntoView:: ?bool
 //   When true, the next display update will scroll the cursor into
 //   view.
+//
+//   time:: number
+//   The timestamp at which the action was created.
 
 // AddStoredMarkAction:: interface
 // An action type that adds a stored mark to the state.

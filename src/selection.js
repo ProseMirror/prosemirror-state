@@ -28,7 +28,7 @@ class Selection {
   // Create an [action](#state.Action) that updates the selection to
   // this one.
   action(options) {
-    let action = {type: "selection", selection: this}
+    let action = {type: "selection", selection: this, time: Date.now()}
     if (options) for (let prop in options) action[prop] = options[prop]
     return action
   }
