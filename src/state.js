@@ -102,7 +102,7 @@ class Configuration {
 // ::- The state of a ProseMirror editor is represented by an object
 // of this type. This is a persistent data structure—it isn't updated,
 // but rather a new state value is computed from an old one with the
-// [`applyAction`](state.EditorState.applyAction) method.
+// [`applyAction`](#state.EditorState.applyAction) method.
 //
 // In addition to the built-in state fields, plugins can define
 // additional pieces of state.
