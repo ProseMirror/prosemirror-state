@@ -1,8 +1,5 @@
 const {Transform} = require("prosemirror-transform")
-const {Node} = require("prosemirror-model")
 const {Selection} = require("./selection")
-
-let warnedAboutReplaceSelection = false
 
 // ::- A selection-aware extension of `Transform`. Use
 // [`EditorState.tr`](#state.EditorState.tr) to create an instance.
@@ -40,14 +37,6 @@ class EditorTransform extends Transform {
 
   // :: (Slice) → EditorTransform
   replaceSelection(slice) {
-    if (slice instanceof Node) { // FIXME backwards compat hack, drop in next release
-      if (!warnedAboutReplaceSelection) {
-        if (typeof console != "undefined" && console.warn)
-          console.warn("Calling EditorTransform.replaceSelection with a node is deprecated. Use replaceSelectionWith")
-        warnedAboutReplaceSelection = true
-      }
-      return this.replaceSelectionWith(slice)
-    }
     let {from, to} = this.selection, startLen = this.steps.length
     this.replaceRange(from, to, slice)
     // Move the selection to the position after the inserted content.
