@@ -4,16 +4,6 @@ const {Mapping} = require("prosemirror-transform")
 const {Selection} = require("./selection")
 const {EditorTransform} = require("./transform")
 
-class ViewState {
-  constructor(inDOMChange, domChangeMapping, scrollToSelection) {
-    this.inDOMChange = inDOMChange
-    this.domChangeMapping = domChangeMapping
-    this.scrollToSelection = scrollToSelection
-  }
-}
-ViewState.initial = new ViewState(null, null, false)
-exports.ViewState = ViewState
-
 function bind(f, self) {
   return !self || !f ? f : f.bind(self)
 }
@@ -58,20 +48,11 @@ const baseFields = [
     }
   }),
 
-  new FieldDesc("view", {
-    init() { return ViewState.initial },
-    applyAction(action, view) {
-      if (action.type == "transform")
-        return new ViewState(view.inDOMChange,
-                             view.domChangeMapping && view.domChangeMapping.copy().appendMapping(action.transform.mapping),
-                             action.scrollIntoView ? true : action.selection ? false : view.scrollToSelection)
-      if (action.type == "selection")
-        return new ViewState(view.inDOMChange, view.domChangeMapping, action.scrollIntoView)
-      if (action.type == "startDOMChange")
-        return new ViewState(action.id, new Mapping, view.scrollToSelection)
-      if (action.type == "endDOMChange")
-        return new ViewState(null, null, view.scrollToSelection)
-      return view
+  new FieldDesc("scrollToSelection", {
+    init() { return 0 },
+    applyAction(action, prev) {
+      return (action.type == "transform" || action.type == "selection") && action.scrollIntoView
+        ? prev + 1 : prev
     }
   })
 ]
@@ -141,6 +122,7 @@ class EditorState {
       let field = fields[i]
       newInstance[field.name] = field.applyAction(action, this[field.name], this, newInstance)
     }
+    for (let i = 0; i < applyListeners.length; i++) applyListeners[i](this, action, newInstance)
     return newInstance
   }
 
@@ -226,8 +208,20 @@ class EditorState {
     })
     return instance
   }
+
+  // Kludge to allow the view to track mappings between different
+  // instances of a state.
+  static addApplyListener(f) {
+    applyListeners.push(f)
+  }
+  static removeApplyListener(f) {
+    let found = applyListeners.indexOf(f)
+    if (found > -1) applyListeners.splice(found, 1)
+  }
 }
 exports.EditorState = EditorState
+
+const applyListeners = []
 
 // Action:: interface
 // State updates are performed through actions, which are objects that

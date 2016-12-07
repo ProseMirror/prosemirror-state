@@ -33,6 +33,13 @@ class Selection {
     return action
   }
 
+  // :: () → SelectionAction
+  // Create an action that updates the selection to this one and
+  // scrolls it into view.
+  scrollAction() {
+    return this.action({scrollIntoView: true})
+  }
+
   // eq:: (other: Selection) → bool
   // Test whether the selection is the same as another selection.
 
