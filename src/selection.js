@@ -203,7 +203,7 @@ class NodeSelection extends Selection {
   // Create a node selection. Does not verify the validity of its
   // argument.
   constructor($from) {
-    let $to = $from.plusOne()
+    let $to = $from.node(0).resolve($from.pos + $from.nodeAfter.nodeSize)
     super($from, $to)
     // :: Node The selected node.
     this.node = $from.nodeAfter
