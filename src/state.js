@@ -116,6 +116,7 @@ class EditorState {
   // :: (Action) → EditorState
   // Apply the given action to produce a new state.
   applyAction(action) {
+    if (action.type == null) throw new RangeError("Not a valid action")
     let newInstance = new EditorState(this.config), fields = this.config.fields
     for (let i = 0; i < fields.length; i++) {
       let field = fields[i]

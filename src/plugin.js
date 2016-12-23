@@ -24,6 +24,23 @@ class Plugin {
   //     it is possible to access the plugin's configuration and state
   //     through the key, without having access to the plugin instance
   //     itself.
+  //
+  //     view:: ?(EditorView) → Object
+  //     When the plugin needs to interact with the editor view, or
+  //     set something up in the DOM, use this field. The function
+  //     will be called when the plugin's state is associated with an
+  //     editor view.
+  //
+  //       return:: Object
+  //       Should return an object with the following optional
+  //       properties:
+  //
+  //         update:: ?(EditorView)
+  //         Called whenever the view's state is updated.
+  //
+  //         destroy:: ?()
+  //         Called when the view is destroyed or receives a state
+  //         with different plugins.
   constructor(options) {
     // :: EditorProps
     // The props exported by this plugin.
