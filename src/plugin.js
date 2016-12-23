@@ -31,7 +31,7 @@ class Plugin {
   //     will be called when the plugin's state is associated with an
   //     editor view.
   //
-  //       return:: Object
+  //       return::-
   //       Should return an object with the following optional
   //       properties:
   //
