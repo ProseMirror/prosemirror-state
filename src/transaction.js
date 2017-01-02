@@ -10,7 +10,6 @@ const {Selection} = require("./selection")
 class Transaction extends Transform {
   constructor(state) {
     super(state.doc)
-    this.origin = null
     // :: number
     // The timestamp associated with this transaction.
     this.time = Date.now()
@@ -24,7 +23,7 @@ class Transaction extends Transform {
     // :: ?[Mark]
     // The stored marks in this transaction.
     this.storedMarks = state.storedMarks
-    this.scroll = false
+    this.store = Object.create(null)
   }
 
   // :: Selection
@@ -102,13 +101,6 @@ class Transaction extends Transform {
     }
   }
 
-  // :: (string) → Transaction
-  // Set an origin string for this transaction.
-  setOrigin(origin) {
-    this.origin = origin
-    return this
-  }
-
   // :: (number) → Transaction
   // Update the timestamp for the transaction.
   setTime(time) {
@@ -116,24 +108,25 @@ class Transaction extends Transform {
     return this
   }
 
-  // :: (Plugin, any) → Transaction
-  // Store a plugin-local value in this transaction.
-  set(plugin, value) {
-    this[plugin.key] = value
+  // :: (union<string, Plugin, PluginKey>, any) → Transaction
+  // Store a property in this transaction, keyed either by name or by
+  // plugin.
+  set(key, value) {
+    this.store[typeof key == "string" ? key : key.key] = value
     return this
   }
 
-  // :: (Plugin) → any
-  // Retrieve the plugin-local value for a given plugin.
-  get(plugin) {
-    return this[plugin.key]
+  // :: (union<string, Plugin, PluginKey>) → any
+  // Retrieve a property for a given name or plugin.
+  get(key) {
+    return this.store[typeof key == "string" ? key : key.key]
   }
 
   // :: () → Transaction
   // Indicate that the editor should scroll the selection into view
   // when updated to the state produced by this transaction.
   scrollIntoView() {
-    this.scroll = true
+    this.store.scrollIntoView = true
     return this
   }
 

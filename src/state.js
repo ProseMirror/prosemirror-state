@@ -37,7 +37,7 @@ const baseFields = [
 
   new FieldDesc("scrollToSelection", {
     init() { return 0 },
-    apply(tr, prev) { return tr.scroll ? prev + 1 : prev }
+    apply(tr, prev) { return tr.store.scrollIntoView ? prev + 1 : prev }
   })
 ]
 
