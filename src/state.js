@@ -1,7 +1,7 @@
-const {Mark, Node} = require("prosemirror-model")
+const {Node} = require("prosemirror-model")
 
 const {Selection} = require("./selection")
-const {EditorTransform} = require("./transform")
+const {Transaction} = require("./transaction")
 
 function bind(f, self) {
   return !self || !f ? f : f.bind(self)
@@ -11,57 +11,38 @@ class FieldDesc {
   constructor(name, desc, self) {
     this.name = name
     this.init = bind(desc.init, self)
-    this.applyAction = bind(desc.applyAction, self)
+    this.apply = bind(desc.apply, self)
   }
 }
 
 const baseFields = [
   new FieldDesc("doc", {
     init(config) { return config.doc || config.schema.nodes.doc.createAndFill() },
-    applyAction(action, doc) {
-      return action.type == "transform" ? action.transform.doc : doc
-    }
+    apply(tr) { return tr.doc }
   }),
 
   new FieldDesc("selection", {
     init(config, instance) { return config.selection || Selection.atStart(instance.doc) },
-    applyAction(action, selection) {
-      if (action.type == "transform")
-        return action.selection || selection.map(action.transform.doc, action.transform.mapping)
-      if (action.type == "selection")
-        return action.selection
+    apply(tr, selection) {
+      if (tr.selectionSet) return tr.selection
+      if (tr.steps.length) return selection.map(tr.doc, tr.mapping)
       return selection
     }
   }),
 
   new FieldDesc("storedMarks", {
     init() { return null },
-    applyAction(action, storedMarks, state) {
-      if (action.type == "transform") return action.selection ? null : storedMarks
-      if (action.type == "selection") return null
-      if (action.type == "addStoredMark" && state.selection.empty)
-        return action.mark.addToSet(storedMarks || currentMarks(state.doc, state.selection))
-      if (action.type == "removeStoredMark" && state.selection.empty)
-        return action.markType.removeFromSet(storedMarks || currentMarks(state.doc, state.selection))
-      return storedMarks
-    }
+    apply(tr, _marks, _old, state) { return state.selection.empty ? tr.storedMarks : null }
   }),
 
   new FieldDesc("scrollToSelection", {
     init() { return 0 },
-    applyAction(action, prev) {
-      return (action.type == "transform" || action.type == "selection") && action.scrollIntoView
-        ? prev + 1 : prev
-    }
+    apply(tr, prev) { return tr.scroll ? prev + 1 : prev }
   })
 ]
 
-function currentMarks(doc, selection) {
-  return selection.head == null ? Mark.none : doc.marksAt(selection.head)
-}
-
 // Object wrapping the part of a state object that stays the same
-// across actions. Stored in the state's `config` property.
+// across transactions. Stored in the state's `config` property.
 class Configuration {
   constructor(schema, plugins) {
     this.schema = schema
@@ -82,7 +63,7 @@ class Configuration {
 // ::- The state of a ProseMirror editor is represented by an object
 // of this type. This is a persistent data structure—it isn't updated,
 // but rather a new state value is computed from an old one with the
-// [`applyAction`](#state.EditorState.applyAction) method.
+// [`apply`](#state.EditorState.apply) method.
 //
 // In addition to the built-in state fields, plugins can define
 // additional pieces of state.
@@ -113,22 +94,22 @@ class EditorState {
     return this.config.plugins
   }
 
-  // :: (Action) → EditorState
-  // Apply the given action to produce a new state.
-  applyAction(action) {
-    if (action.type == null) throw new RangeError("Not a valid action")
+  // :: (Transaction) → EditorState
+  // Apply the given transaction to produce a new state.
+  apply(tr) {
+    if (!tr.before.eq(this.doc)) throw new RangeError("Applying a mismatched transaction")
     let newInstance = new EditorState(this.config), fields = this.config.fields
     for (let i = 0; i < fields.length; i++) {
       let field = fields[i]
-      newInstance[field.name] = field.applyAction(action, this[field.name], this, newInstance)
+      newInstance[field.name] = field.apply(tr, this[field.name], this, newInstance)
     }
-    for (let i = 0; i < applyListeners.length; i++) applyListeners[i](this, action, newInstance)
+    for (let i = 0; i < applyListeners.length; i++) applyListeners[i](this, tr, newInstance)
     return newInstance
   }
 
-  // :: EditorTransform
-  // Create a selection-aware [`Transform` object](#state.EditorTransform).
-  get tr() { return new EditorTransform(this) }
+  // :: Transaction
+  // Start a [transaction](#state.Transaction) from this state.
+  get tr() { return new Transaction(this) }
 
   // :: (Object) → EditorState
   // Create a state. `config` must be an object containing at least a
@@ -222,72 +203,3 @@ class EditorState {
 exports.EditorState = EditorState
 
 const applyListeners = []
-
-// Action:: interface
-// State updates are performed through actions, which are objects that
-// describe the update.
-//
-//  type:: string
-//  The type of this action. This determines the way the action is
-//  interpreted, and which other fields it should have.
-
-// TransformAction:: interface
-// An action type that transforms the state's document. Applying this
-// will create a state in which the document is the result of this
-// transformation.
-//
-//   type:: "transform"
-//
-//   transform:: Transform
-//
-//   selection:: ?Selection
-//   If given, this selection will be used as the new selection. If
-//   not, the old selection is mapped through the transform.
-//
-//   time:: number
-//   The timestamp at which the change was made.
-//
-//   sealed: ?bool
-//   Should be set to true when this action's transform should not be
-//   changed after the fact with
-//   [`extendTransformAction`](#state.extendTransformAction) (for
-//   example when the action carries metadata that makes assumptions
-//   about the transform). Defaults to false.
-//
-//   scrollIntoView:: ?bool
-//   When true, the next display update will scroll the cursor into
-//   view.
-
-// SelectionAction:: interface
-// An action that updates the selection.
-//
-//   type:: "selection"
-//
-//   selection:: Selection
-//   The new selection.
-//
-//   origin:: ?string
-//   An optional string giving more information about the source of
-//   the action. The [view](##view) will set this to `"mouse"` for
-//   selection actions originating from mouse events.
-//
-//   scrollIntoView:: ?bool
-//   When true, the next display update will scroll the cursor into
-//   view.
-//
-//   time:: number
-//   The timestamp at which the action was created.
-
-// AddStoredMarkAction:: interface
-// An action type that adds a stored mark to the state.
-//
-//   type:: "addStoredMark"
-//
-//   mark:: Mark
-
-// RemoveStoredMarkAction:: interface
-// An action type that removes a stored mark from the state.
-//
-//   type:: "removeStoredMark"
-//
-//   markType:: MarkType

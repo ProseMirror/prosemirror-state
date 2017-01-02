@@ -19,12 +19,12 @@ exports.TestState = class TestState {
     this.state = EditorState.create(config)
   }
 
-  apply(action) {
-    this.state = this.state.applyAction(action.steps ? action.action() : action)
+  apply(tr) {
+    this.state = this.state.apply(tr)
   }
 
   command(cmd) {
-    cmd(this.state, action => this.apply(action))
+    cmd(this.state, tr => this.apply(tr))
   }
 
   type(text) {
@@ -32,17 +32,17 @@ exports.TestState = class TestState {
   }
 
   deleteSelection() {
-    this.apply(this.state.tr.deleteSelection().action())
+    this.apply(this.state.tr.deleteSelection())
   }
 
   textSel(anchor, head) {
     let sel = TextSelection.create(this.state.doc, anchor, head)
-    this.state = this.state.applyAction(sel.action())
+    this.state = this.state.apply(this.state.tr.setSelection(sel))
   }
 
   nodeSel(pos) {
     let sel = NodeSelection.create(this.state.doc, pos)
-    this.state = this.state.applyAction(sel.action())
+    this.state = this.state.apply(this.state.tr.setSelection(sel))
   }
 
   get doc() { return this.state.doc }

@@ -2,8 +2,7 @@
    TextSelection: exports.TextSelection,
    NodeSelection: exports.NodeSelection} = require("./selection"))
 
-;({EditorTransform: exports.EditorTransform,
-   extendTransformAction: exports.extendTransformAction} = require("./transform"))
+exports.Transaction = require("./transaction").Transaction
 
 exports.EditorState = require("./state").EditorState
 

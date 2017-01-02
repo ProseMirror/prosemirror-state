@@ -9,18 +9,7 @@ be required to create an editor just like the current one) in a single
 state) by applying [actions](#state.Action) to it.
 
 @EditorState
-@Action
-@TransformAction
-@SelectionAction
-@AddStoredMarkAction
-@RemoveStoredMarkAction
-@EditorTransform
-
-It is possible, when dispatching an action, to change it before
-applying it. The following helper can be used to safely update
-transform actions:
-
-@extendTransformAction
+@Transaction
 
 ### Selection
 

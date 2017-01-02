@@ -7,7 +7,7 @@ const messageCountPlugin = new Plugin({
   key: messageCountKey,
   state: {
     init() { return 0 },
-    applyAction(_, count) { return count + 1 },
+    apply(_, count) { return count + 1 },
     toJSON(count) { return count },
     fromJSON(_, count) { return count }
   },
@@ -28,9 +28,9 @@ describe("State", () => {
     ist(state.selection.to, 1)
   })
 
-  it("applies transform actions", () => {
+  it("applies transform transactions", () => {
     let state = EditorState.create({schema})
-    let newState = state.applyAction(state.tr.insertText("hi").action())
+    let newState = state.apply(state.tr.insertText("hi"))
     ist(state.doc, doc(p()), eq)
     ist(newState.doc, doc(p("hi")), eq)
     ist(newState.selection.from, 3)
@@ -38,14 +38,14 @@ describe("State", () => {
 
   it("supports plugin fields", () => {
     let state = EditorState.create({plugins: [messageCountPlugin], schema})
-    let newState = state.applyAction({type: "foo"}).applyAction({type: "bar"})
+    let newState = state.apply(state.tr).apply(state.tr)
     ist(messageCountPlugin.getState(state), 0)
     ist(messageCountPlugin.getState(newState), 2)
   })
 
   it("can be serialized to JSON", () => {
     let state = EditorState.create({plugins: [messageCountPlugin], doc: doc(p("ok"))})
-    state = state.applyAction(TextSelection.create(state.doc, 3).action())
+    state = state.apply(state.tr.setSelection(TextSelection.create(state.doc, 3)))
     let pluginProps = {count: messageCountPlugin}
     let expected = {doc: {type: "doc", content: [{type: "paragraph", content:
                                                   [{type: "text", text: "ok"}]}]},

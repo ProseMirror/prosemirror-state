@@ -24,22 +24,6 @@ class Selection {
     return this.from == this.to
   }
 
-  // :: (?Object) → SelectionAction
-  // Create an [action](#state.Action) that updates the selection to
-  // this one.
-  action(options) {
-    let action = {type: "selection", selection: this, time: Date.now()}
-    if (options) for (let prop in options) action[prop] = options[prop]
-    return action
-  }
-
-  // :: () → SelectionAction
-  // Create an action that updates the selection to this one and
-  // scrolls it into view.
-  scrollAction() {
-    return this.action({scrollIntoView: true})
-  }
-
   // eq:: (other: Selection) → bool
   // Test whether the selection is the same as another selection.
 
