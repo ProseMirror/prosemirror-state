@@ -13,7 +13,6 @@ class Transaction extends Transform {
     // :: number
     // The timestamp associated with this transaction.
     this.time = Date.now()
-    this.state = state
     this.curSelection = state.selection
     this.curSelectionAt = 0
     // :: bool
@@ -75,7 +74,7 @@ class Transaction extends Transform {
   replaceSelectionWith(node, inheritMarks) {
     let {from, to} = this.selection, startLen = this.steps.length
     if (inheritMarks !== false)
-      node = node.mark(this.state.storedMarks || this.doc.marksAt(from, to > from))
+      node = node.mark(this.storedMarks || this.doc.marksAt(from, to > from))
     this.replaceRangeWith(from, to, node)
     selectionToInsertionEnd(this, startLen, node.isInline ? -1 : 1)
     return this
@@ -92,12 +91,13 @@ class Transaction extends Transform {
   // Replace the given range, or the selection if no range is given,
   // with a text node containing the given string.
   insertText(text, from, to = from) {
+    let schema = this.doc.type.schema
     if (from == null) {
       if (!text) return this.deleteSelection()
-      return this.replaceSelectionWith(this.state.schema.text(text), true)
+      return this.replaceSelectionWith(schema.text(text), true)
     } else {
       if (!text) return this.deleteRange(from, to)
-      let node = this.state.schema.text(text, this.state.storedMarks || this.doc.marksAt(from, to > from))
+      let node = schema.text(text, this.storedMarks || this.doc.marksAt(from, to > from))
       return this.replaceRangeWith(from, to, node)
     }
   }
