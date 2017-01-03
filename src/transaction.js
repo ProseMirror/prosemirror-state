@@ -123,6 +123,14 @@ class Transaction extends Transform {
     return this.store[typeof key == "string" ? key : key.key]
   }
 
+  // :: bool
+  // Returns true if this transaction doesn't contain any properties,
+  // and can thus be safely extended.
+  get isGeneric() {
+    for (let prop in this.store) if (prop != "scrollIntoView") return false
+    return true
+  }
+
   // :: () → Transaction
   // Indicate that the editor should scroll the selection into view
   // when updated to the state produced by this transaction.
