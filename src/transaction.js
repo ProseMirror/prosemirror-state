@@ -30,7 +30,7 @@ class Transaction extends Transform {
   // The transform's current selection. This defaults to the
   // editor selection [mapped](#state.Selection.map) through the steps in
   // this transform, but can be overwritten with
-  // [`setSelection`](#state.EditorTransform.setSelection).
+  // [`setSelection`](#state.Transaction.setSelection).
   get selection() {
     if (this.curSelectionAt < this.steps.length) {
       this.curSelection = this.curSelection.map(this.doc, this.mapping.slice(this.curSelectionAt))
@@ -39,9 +39,10 @@ class Transaction extends Transform {
     return this.curSelection
   }
 
-  // :: (Selection) → EditorTransform
-  // Update the transform's current selection. This will determine the
-  // selection that the editor gets when the transform is applied.
+  // :: (Selection) → Transaction
+  // Update the transaction's current selection. This will determine
+  // the selection that the editor gets when the transaction is
+  // applied.
   setSelection(selection) {
     this.curSelection = selection
     this.curSelectionAt = this.steps.length
@@ -50,7 +51,7 @@ class Transaction extends Transform {
     return this
   }
 
-  // :: (Slice) → EditorTransform
+  // :: (Slice) → Transaction
   replaceSelection(slice) {
     let {from, to} = this.selection, startLen = this.steps.length
     this.replaceRange(from, to, slice)
@@ -66,7 +67,7 @@ class Transaction extends Transform {
     return this
   }
 
-  // :: (Node, ?bool) → EditorTransform
+  // :: (Node, ?bool) → Transaction
   // Replace the selection with the given node or slice, or delete it
   // if `content` is null. When `inheritMarks` is true and the content
   // is inline, it inherits the marks from the place where it is
@@ -80,14 +81,14 @@ class Transaction extends Transform {
     return this
   }
 
-  // :: () → EditorTransform
+  // :: () → Transaction
   // Delete the selection.
   deleteSelection() {
     let {from, to} = this.selection
     return this.deleteRange(from, to)
   }
 
-  // :: (string, from: ?number, to: ?number) → EditorTransform
+  // :: (string, from: ?number, to: ?number) → Transaction
   // Replace the given range, or the selection if no range is given,
   // with a text node containing the given string.
   insertText(text, from, to = from) {
@@ -137,8 +138,8 @@ class Transaction extends Transform {
     return this
   }
 
-  // :: (Mark) → Transaction
-  // Remove a mark from the set of stored marks.
+  // :: (union<Mark, MarkType>) → Transaction
+  // Remove a mark or mark type from the set of stored marks.
   removeStoredMark(mark) {
     this.storedMarks = mark.removeFromSet(this.storedMarks || currentMarks(this.doc, this.selection))
     return this

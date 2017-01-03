@@ -9,9 +9,10 @@ class Plugin {
   //
   //     props:: ?EditorProps
   //     The [view props](#view.EditorProps) added by this plugin.
-  //     Note that the [`onAction`](#view.EditorProps.onAction) and
-  //     [`state`](#view.EditorProps.state) props can't be defined by
-  //     plugins, only by the main props object. Props that are
+  //     Note that the
+  //     [`dispatchTransaction`](#view.EditorProps.dispatchTransaction)
+  //     and [`state`](#view.EditorProps.state) props can't be defined
+  //     by plugins, only by the main props object. Props that are
   //     functions will be bound to have the plugin instance as their
   //     `this` binding.
   //
@@ -74,9 +75,9 @@ exports.Plugin = Plugin
 //   that `instance` is a half-initialized state instance, and will
 //   not have values for any fields initialzed after this one.
 //
-//   applyAction:: (action: Action, value: T, oldState: EditorState, newState: EditorState) → T
-//   Apply the given action to this state field, producing a new field
-//   value. Note that the `newState` argument is a partially
+//   apply:: (tr: Transaction, value: T, oldState: EditorState, newState: EditorState) → T
+//   Apply the given transaction to this state field, producing a new
+//   field value. Note that the `newState` argument is a partially
 //   constructed state does not yet contain the state from plugins
 //   coming after this plugin.
 //
