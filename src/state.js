@@ -46,7 +46,7 @@ const baseFields = [
 class Configuration {
   constructor(schema, plugins) {
     this.schema = schema
-    this.fields = baseFields.slice()
+    this.fields = baseFields.concat()
     this.plugins = []
     this.pluginsByKey = Object.create(null)
     if (plugins) plugins.forEach(plugin => {
@@ -97,6 +97,59 @@ class EditorState {
   // :: (Transaction) → EditorState
   // Apply the given transaction to produce a new state.
   apply(tr) {
+    return this.applyTransaction(tr).state
+  }
+
+  // : (Transaction) → ?Transaction
+  filterTransaction(tr) {
+    for (let i = 0; i < this.config.plugins.length; i++) {
+      let plugin = this.config.plugins[i]
+      if (plugin.options.filterTransaction && !plugin.options.filterTransaction.call(plugin, tr, this))
+        return false
+    }
+    return true
+  }
+
+  // :: (Transaction) → {state: EditorState, transactions: [Transaction]}
+  // Verbose variant of [`apply`](##state.EditorState.apply) that
+  // returns the precise transactions that were applied (which might
+  // be influenced by the [transaction
+  // hooks](##state.Plugin.constructor^options.filterTransaction) of
+  // plugins) along with the new state.
+  applyTransaction(tr) {
+    if (!this.filterTransaction(tr)) return {state: this, transactions: []}
+
+    let trs = [tr], newState = this.applyInner(tr), seen = null
+    // This loop repeatedly gives plugins a chance to respond to
+    // transactions as new transactions are added, making sure to only
+    // pass the transactions the plugin did not see before.
+    outer: for (;;) {
+      let haveNew = false
+      for (let i = 0; i < this.config.plugins.length; i++) {
+        let plugin = this.config.plugins[i]
+        if (plugin.options.appendTransaction) {
+          let n = seen ? seen[i].n : 0, oldState = seen ? seen[i].state : this
+          let tr = n < trs.length &&
+              plugin.options.appendTransaction.call(plugin, n ? trs.slice(n) : trs, oldState, newState)
+          if (tr && newState.filterTransaction(tr)) {
+            if (!seen) {
+              seen = []
+              for (let j = 0; j < this.config.plugins.length; j++)
+                seen.push(j < i ? {state: newState, n: trs.length} : {state: this, n: 0})
+            }
+            trs.push(tr)
+            newState = newState.applyInner(tr)
+            haveNew = true
+          }
+          if (seen) seen[i] = {state: newState, n: trs.length}
+        }
+      }
+      if (!haveNew) return {state: newState, transactions: trs}
+    }
+  }
+
+  // : (Transaction) → EditorState
+  applyInner(tr) {
     if (!tr.before.eq(this.doc)) throw new RangeError("Applying a mismatched transaction")
     let newInstance = new EditorState(this.config), fields = this.config.fields
     for (let i = 0; i < fields.length; i++) {

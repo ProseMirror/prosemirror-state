@@ -16,6 +16,14 @@ const messageCountPlugin = new Plugin({
   }
 })
 
+const transactionPlugin = new Plugin({
+  filterTransaction(tr) { return !tr.get("filtered") },
+  appendTransaction(trs, _, state) {
+    let last = trs[trs.length - 1]
+    if (last && last.get("append")) return state.tr.insertText("A")
+  }
+})
+
 describe("State", () => {
   it("creates a default doc", () => {
     let state = EditorState.create({schema})
@@ -75,6 +83,23 @@ describe("State", () => {
     let reAdd = without.reconfigure({plugins: [messageCountPlugin]})
     ist(messageCountPlugin.getState(reAdd), 0)
     ist(reAdd.plugins.length, 1)
+  })
+
+  it("allows plugins to filter transactions", () => {
+    let state = EditorState.create({plugins: [transactionPlugin], schema})
+    let applied = state.applyTransaction(state.tr.insertText("X"))
+    ist(applied.state.doc, doc(p("X")), eq)
+    ist(applied.transactions.length, 1)
+    applied = state.applyTransaction(state.tr.insertText("Y").set("filtered", true))
+    ist(applied.state, state)
+    ist(applied.transactions.length, 0)
+  })
+
+  it("allows plugins to append transactions", () => {
+    let state = EditorState.create({plugins: [transactionPlugin], schema})
+    let applied = state.applyTransaction(state.tr.insertText("X").set("append", true))
+    ist(applied.state.doc, doc(p("XA")), eq)
+    ist(applied.transactions.length, 2)
   })
 })
 

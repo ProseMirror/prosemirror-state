@@ -42,6 +42,17 @@ class Plugin {
   //         destroy:: ?()
   //         Called when the view is destroyed or receives a state
   //         with different plugins.
+  //
+  //     filterTransaction:: ?(Transaction, EditorState) → bool
+  //     When present, this will be called before a transaction is
+  //     applied by the state, allowing the plugin to cancel it (by
+  //     returning false).
+  //
+  //     appendTransaction:: ?(transactions: [Transaction], oldState: EditorState, newState: EditorState) → ?Transaction
+  //     Allows the plugin to append another transaction to be applied
+  //     after the given array of transactions. When another plugin
+  //     appends a transaction after this was called, it is called
+  //     again with the new state and extended array of transactions.
   constructor(options) {
     // :: EditorProps
     // The props exported by this plugin.
