@@ -101,8 +101,8 @@ class EditorState {
   }
 
   // : (Transaction) → ?Transaction
-  filterTransaction(tr) {
-    for (let i = 0; i < this.config.plugins.length; i++) {
+  filterTransaction(tr, ignore = -1) {
+    for (let i = 0; i < this.config.plugins.length; i++) if (i != ignore) {
       let plugin = this.config.plugins[i]
       if (plugin.options.filterTransaction && !plugin.options.filterTransaction.call(plugin, tr, this))
         return false
@@ -131,7 +131,7 @@ class EditorState {
           let n = seen ? seen[i].n : 0, oldState = seen ? seen[i].state : this
           let tr = n < trs.length &&
               plugin.options.appendTransaction.call(plugin, n ? trs.slice(n) : trs, oldState, newState)
-          if (tr && newState.filterTransaction(tr)) {
+          if (tr && newState.filterTransaction(tr, i)) {
             if (!seen) {
               seen = []
               for (let j = 0; j < this.config.plugins.length; j++)
