@@ -146,6 +146,13 @@ class Transaction extends Transform {
     return this
   }
 
+  // :: (?[Mark]) → Transaction
+  // Replace the set of stored marks.
+  setStoredMarks(marks) {
+    this.storedMarks = marks
+    return this
+  }
+
   // :: (union<Mark, MarkType>) → Transaction
   // Remove a mark or mark type from the set of stored marks.
   removeStoredMark(mark) {
