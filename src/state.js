@@ -23,11 +23,7 @@ const baseFields = [
 
   new FieldDesc("selection", {
     init(config, instance) { return config.selection || Selection.atStart(instance.doc) },
-    apply(tr, selection) {
-      if (tr.selectionSet) return tr.selection
-      if (tr.steps.length) return selection.map(tr.doc, tr.mapping)
-      return selection
-    }
+    apply(tr) { return tr.selection }
   }),
 
   new FieldDesc("storedMarks", {

@@ -2,6 +2,8 @@ const {Transform} = require("prosemirror-transform")
 const {Mark} = require("prosemirror-model")
 const {Selection} = require("./selection")
 
+const UPDATED_SEL = 1, UPDATED_MARKS = 2
+
 // ::- An editor state transaction, which can be applied to a state to
 // create an updated state. Relies on its
 // [`Transform`](#transform.Transform) superclass to track the changes
@@ -14,15 +16,21 @@ class Transaction extends Transform {
     // The timestamp associated with this transaction.
     this.time = Date.now()
     this.curSelection = state.selection
-    this.curSelectionAt = 0
-    // :: bool
-    // Whether the selection has been explicitly set for this
-    // transaction.
-    this.selectionSet = false
+    // The step count for which the current selection is valid.
+    this.curSelectionFor = 0
     // :: ?[Mark]
     // The stored marks in this transaction.
     this.storedMarks = state.storedMarks
     this.store = Object.create(null)
+    // Bitfield to track which aspects of the state were updated by
+    // this transaction.
+    this.updated = 0
+  }
+
+  // :: bool
+  // True when this transaction changes the document.
+  get docChanged() {
+    return this.steps.length > 0
   }
 
   // :: Selection
@@ -31,9 +39,9 @@ class Transaction extends Transform {
   // this transform, but can be overwritten with
   // [`setSelection`](#state.Transaction.setSelection).
   get selection() {
-    if (this.curSelectionAt < this.steps.length) {
-      this.curSelection = this.curSelection.map(this.doc, this.mapping.slice(this.curSelectionAt))
-      this.curSelectionAt = this.steps.length
+    if (this.curSelectionFor < this.steps.length) {
+      this.curSelection = this.curSelection.map(this.doc, this.mapping.slice(this.curSelectionFor))
+      this.curSelectionFor = this.steps.length
     }
     return this.curSelection
   }
@@ -44,9 +52,42 @@ class Transaction extends Transform {
   // applied.
   setSelection(selection) {
     this.curSelection = selection
-    this.curSelectionAt = this.steps.length
-    this.selectionSet = true
+    this.curSelectionFor = this.steps.length
+    this.updated = (this.updated | UPDATED_SEL) & ~UPDATED_MARKS
     this.storedMarks = null
+    return this
+  }
+
+  // :: bool
+  // Whether the selection was explicitly updated by this transaction.
+  get selectionSet() {
+    return this.updated & UPDATED_SEL > 0
+  }
+
+  // :: (?[Mark]) → Transaction
+  // Replace the set of stored marks.
+  setStoredMarks(marks) {
+    this.storedMarks = marks
+    this.updated |= UPDATED_MARKS
+    return this
+  }
+
+  // :: bool
+  // Whether the stored marks were explicitly set for this transaction.
+  get storedMarksSet() {
+    return this.updated & UPDATED_MARKS > 0
+  }
+
+  addStep(step, doc) {
+    super.addStep(step, doc)
+    this.updated = this.updated & ~UPDATED_MARKS
+    this.storedMarks = null
+  }
+
+  // :: (number) → Transaction
+  // Update the timestamp for the transaction.
+  setTime(time) {
+    this.time = time
     return this
   }
 
@@ -102,13 +143,6 @@ class Transaction extends Transform {
     }
   }
 
-  // :: (number) → Transaction
-  // Update the timestamp for the transaction.
-  setTime(time) {
-    this.time = time
-    return this
-  }
-
   // :: (union<string, Plugin, PluginKey>, any) → Transaction
   // Store a property in this transaction, keyed either by name or by
   // plugin.
@@ -143,13 +177,6 @@ class Transaction extends Transform {
   // Add a mark to the set of stored marks.
   addStoredMark(mark) {
     this.storedMarks = mark.addToSet(this.storedMarks || currentMarks(this.selection))
-    return this
-  }
-
-  // :: (?[Mark]) → Transaction
-  // Replace the set of stored marks.
-  setStoredMarks(marks) {
-    this.storedMarks = marks
     return this
   }
 
