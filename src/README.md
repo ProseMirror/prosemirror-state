@@ -6,7 +6,7 @@ with the representation of the selection and the plugin abstraction.
 ProseMirror keeps all editor state (the things, basically, that would
 be required to create an editor just like the current one) in a single
 [object](#state.EditorState). That object is updated (creating a new
-state) by applying [actions](#state.Action) to it.
+state) by applying [transactions](#state.Transaction) to it.
 
 @EditorState
 @Transaction

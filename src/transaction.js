@@ -5,10 +5,22 @@ const {Selection} = require("./selection")
 const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 
 // ::- An editor state transaction, which can be applied to a state to
-// create an updated state. Relies on its
-// [`Transform`](#transform.Transform) superclass to track the changes
-// to the document. Use [`EditorState.tr`](#state.EditorState.tr) to
-// create an instance.
+// create an updated state. Use
+// [`EditorState.tr`](#state.EditorState.tr) to create an instance.
+//
+// Transactions track changes to the document (they are a subclass of
+// [`Transform`](#transform.Transform)), but also other state changes,
+// like selection updates and adjustments of the set of [stored
+// marks](##state.EditorState.storedMarks). In addition, you can store
+// metadata properties in a transaction, which are extra pieces of
+// informations that client code or plugins can use to describe what a
+// transacion represents, so that they can update their [own
+// state](##state.StateField) accordingly.
+//
+// The [editor view](##view.EditorView) uses a single metadata
+// property: it will attach a property `"pointer"` with the value
+// `true` to selection transactions directly caused by mouse or touch
+// input.
 class Transaction extends Transform {
   constructor(state) {
     super(state.doc)
