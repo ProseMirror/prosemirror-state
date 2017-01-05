@@ -24,7 +24,8 @@ class Transaction extends Transform {
     // Bitfield to track which aspects of the state were updated by
     // this transaction.
     this.updated = 0
-    this.store = Object.create(null)
+    // Object used to store metadata properties for the transaction.
+    this.meta = Object.create(null)
   }
 
   // :: bool
@@ -144,24 +145,24 @@ class Transaction extends Transform {
   }
 
   // :: (union<string, Plugin, PluginKey>, any) → Transaction
-  // Store a property in this transaction, keyed either by name or by
-  // plugin.
-  set(key, value) {
-    this.store[typeof key == "string" ? key : key.key] = value
+  // Store a metadata property in this transaction, keyed either by
+  // name or by plugin.
+  setMeta(key, value) {
+    this.meta[typeof key == "string" ? key : key.key] = value
     return this
   }
 
   // :: (union<string, Plugin, PluginKey>) → any
-  // Retrieve a property for a given name or plugin.
-  get(key) {
-    return this.store[typeof key == "string" ? key : key.key]
+  // Retrieve a metadata property for a given name or plugin.
+  getMeta(key) {
+    return this.meta[typeof key == "string" ? key : key.key]
   }
 
   // :: bool
-  // Returns true if this transaction doesn't contain any properties,
+  // Returns true if this transaction doesn't contain any metadata,
   // and can thus be safely extended.
   get isGeneric() {
-    for (let prop in this.store) return false
+    for (let _ in this.meta) return false
     return true
   }
 
