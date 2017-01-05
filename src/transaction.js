@@ -2,7 +2,7 @@ const {Transform} = require("prosemirror-transform")
 const {Mark} = require("prosemirror-model")
 const {Selection} = require("./selection")
 
-const UPDATED_SEL = 1, UPDATED_MARKS = 2
+const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 
 // ::- An editor state transaction, which can be applied to a state to
 // create an updated state. Relies on its
@@ -21,10 +21,10 @@ class Transaction extends Transform {
     // :: ?[Mark]
     // The stored marks in this transaction.
     this.storedMarks = state.storedMarks
-    this.store = Object.create(null)
     // Bitfield to track which aspects of the state were updated by
     // this transaction.
     this.updated = 0
+    this.store = Object.create(null)
   }
 
   // :: bool
@@ -161,7 +161,7 @@ class Transaction extends Transform {
   // Returns true if this transaction doesn't contain any properties,
   // and can thus be safely extended.
   get isGeneric() {
-    for (let prop in this.store) if (prop != "scrollIntoView") return false
+    for (let prop in this.store) return false
     return true
   }
 
@@ -169,8 +169,12 @@ class Transaction extends Transform {
   // Indicate that the editor should scroll the selection into view
   // when updated to the state produced by this transaction.
   scrollIntoView() {
-    this.store.scrollIntoView = true
+    this.updated |= UPDATED_SCROLL
     return this
+  }
+
+  get scrolledIntoView() {
+    return this.updated | UPDATED_SCROLL > 0
   }
 
   // :: (Mark) → Transaction
