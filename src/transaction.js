@@ -72,9 +72,9 @@ class Transaction extends Transform {
   // is inline, it inherits the marks from the place where it is
   // inserted.
   replaceSelectionWith(node, inheritMarks) {
-    let {from, to} = this.selection, startLen = this.steps.length
+    let {$from, from, to} = this.selection, startLen = this.steps.length
     if (inheritMarks !== false)
-      node = node.mark(this.storedMarks || this.doc.marksAt(from, to > from))
+      node = node.mark(this.storedMarks || $from.marks(to > from))
     this.replaceRangeWith(from, to, node)
     selectionToInsertionEnd(this, startLen, node.isInline ? -1 : 1)
     return this
@@ -97,7 +97,7 @@ class Transaction extends Transform {
       return this.replaceSelectionWith(schema.text(text), true)
     } else {
       if (!text) return this.deleteRange(from, to)
-      let node = schema.text(text, this.storedMarks || this.doc.marksAt(from, to > from))
+      let node = schema.text(text, this.storedMarks || this.doc.resolve(from).marks(to > from))
       return this.replaceRangeWith(from, to, node)
     }
   }
@@ -142,7 +142,7 @@ class Transaction extends Transform {
   // :: (Mark) → Transaction
   // Add a mark to the set of stored marks.
   addStoredMark(mark) {
-    this.storedMarks = mark.addToSet(this.storedMarks || currentMarks(this.doc, this.selection))
+    this.storedMarks = mark.addToSet(this.storedMarks || currentMarks(this.selection))
     return this
   }
 
@@ -156,7 +156,7 @@ class Transaction extends Transform {
   // :: (union<Mark, MarkType>) → Transaction
   // Remove a mark or mark type from the set of stored marks.
   removeStoredMark(mark) {
-    this.storedMarks = mark.removeFromSet(this.storedMarks || currentMarks(this.doc, this.selection))
+    this.storedMarks = mark.removeFromSet(this.storedMarks || currentMarks(this.selection))
     return this
   }
 }
@@ -169,6 +169,6 @@ function selectionToInsertionEnd(tr, startLen, bias) {
   if (end != null) tr.setSelection(Selection.near(tr.doc.resolve(end), bias))
 }
 
-function currentMarks(doc, selection) {
-  return selection.head == null ? Mark.none : doc.marksAt(selection.head)
+function currentMarks(selection) {
+  return selection.head == null ? Mark.none : selection.$head.marks()
 }
