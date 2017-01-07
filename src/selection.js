@@ -56,8 +56,8 @@ class Selection {
   // Find a valid cursor or leaf node selection near the given
   // position. Searches forward first by default, but if `bias` is
   // negative, it will search backwards first.
-  static near($pos, bias = 1) {
-    let result = this.findFrom($pos, bias) || this.findFrom($pos, -bias)
+  static near($pos, bias = 1, textOnly = false) {
+    let result = this.findFrom($pos, bias, textOnly) || this.findFrom($pos, -bias, textOnly)
     if (!result) throw new RangeError("Searching for selection in invalid document " + $pos.node(0))
     return result
   }
