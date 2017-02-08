@@ -74,7 +74,7 @@ class Transaction extends Transform {
   // :: bool
   // Whether the selection was explicitly updated by this transaction.
   get selectionSet() {
-    return this.updated & UPDATED_SEL > 0
+    return (this.updated & UPDATED_SEL) > 0
   }
 
   // :: (?[Mark]) → Transaction
@@ -88,7 +88,7 @@ class Transaction extends Transform {
   // :: bool
   // Whether the stored marks were explicitly set for this transaction.
   get storedMarksSet() {
-    return this.updated & UPDATED_MARKS > 0
+    return (this.updated & UPDATED_MARKS) > 0
   }
 
   addStep(step, doc) {
@@ -187,7 +187,7 @@ class Transaction extends Transform {
   }
 
   get scrolledIntoView() {
-    return this.updated | UPDATED_SCROLL > 0
+    return (this.updated & UPDATED_SCROLL) > 0
   }
 
   // :: (Mark) → Transaction
