@@ -233,7 +233,7 @@ function findSelectionIn(doc, node, pos, index, dir, text) {
   if (node.isTextblock) return TextSelection.create(doc, pos)
   for (let i = index - (dir > 0 ? 0 : 1); dir > 0 ? i < node.childCount : i >= 0; i += dir) {
     let child = node.child(i)
-    if (!child.isLeaf) {
+    if (!child.isAtom) {
       let inner = findSelectionIn(doc, child, pos + dir, dir < 0 ? child.childCount : 0, dir, text)
       if (inner) return inner
     } else if (!text && NodeSelection.isSelectable(child)) {
