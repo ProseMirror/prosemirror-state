@@ -17,7 +17,7 @@ class FieldDesc {
 
 const baseFields = [
   new FieldDesc("doc", {
-    init(config) { return config.doc || config.schema.nodes.doc.createAndFill() },
+    init(config) { return config.doc || config.schema.topNodeType.createAndFill() },
     apply(tr) { return tr.doc }
   }),
 
