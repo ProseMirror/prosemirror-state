@@ -36,7 +36,7 @@ class Plugin {
   //       Should return an object with the following optional
   //       properties:
   //
-  //         update:: ?(EditorView)
+  //         update:: ?(view: EditorView, prevState: EditorState)
   //         Called whenever the view's state is updated.
   //
   //         destroy:: ?()
