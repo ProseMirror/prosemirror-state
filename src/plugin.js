@@ -1,71 +1,82 @@
+// PluginSpec:: Object
+// A plugin spec provides a definition for a plugin.
+//
+//   props:: ?EditorProps
+//   The [view props](#view.EditorProps) added by this plugin.
+//   Note that the
+//   [`dispatchTransaction`](#view.EditorProps.dispatchTransaction)
+//   and [`state`](#view.EditorProps.state) props can't be defined
+//   by plugins, only by the main props object. Props that are
+//   functions will be bound to have the plugin instance as their
+//   `this` binding.
+//
+//   state:: ?StateField
+//   A [state field](#state.StateField) defined by this plugin.
+//
+//   key:: ?PluginKey
+//   Can optionally be used to make this a keyed plugin. You can
+//   have only one plugin with a given key in a given state, but
+//   it is possible to access the plugin's configuration and state
+//   through the key, without having access to the plugin instance
+//   itself.
+//
+//   view:: ?(EditorView) → Object
+//   When the plugin needs to interact with the editor view, or
+//   set something up in the DOM, use this field. The function
+//   will be called when the plugin's state is associated with an
+//   editor view.
+//
+//     return::-
+//     Should return an object with the following optional
+//     properties:
+//
+//       update:: ?(view: EditorView, prevState: EditorState)
+//       Called whenever the view's state is updated.
+//
+//       destroy:: ?()
+//       Called when the view is destroyed or receives a state
+//       with different plugins.
+//
+//   filterTransaction:: ?(Transaction, EditorState) → bool
+//   When present, this will be called before a transaction is
+//   applied by the state, allowing the plugin to cancel it (by
+//   returning false).
+//
+//   appendTransaction:: ?(transactions: [Transaction], oldState: EditorState, newState: EditorState) → ?Transaction
+//   Allows the plugin to append another transaction to be applied
+//   after the given array of transactions. When another plugin
+//   appends a transaction after this was called, it is called
+//   again with the new state and extended array of transactions.
+
+let warnedAboutOptions = false
+
 // ::- Plugins wrap extra functionality that can be added to an
 // editor. They can define new [state fields](#state.StateField), and
 // add [view props](#view.EditorProps).
 class Plugin {
-  // :: (Object)
+  // :: (PluginSpec)
   // Create a plugin.
-  //
-  //   options::-
-  //
-  //     props:: ?EditorProps
-  //     The [view props](#view.EditorProps) added by this plugin.
-  //     Note that the
-  //     [`dispatchTransaction`](#view.EditorProps.dispatchTransaction)
-  //     and [`state`](#view.EditorProps.state) props can't be defined
-  //     by plugins, only by the main props object. Props that are
-  //     functions will be bound to have the plugin instance as their
-  //     `this` binding.
-  //
-  //     state:: ?StateField
-  //     A [state field](#state.StateField) defined by this plugin.
-  //
-  //     key:: ?PluginKey
-  //     Can optionally be used to make this a keyed plugin. You can
-  //     have only one plugin with a given key in a given state, but
-  //     it is possible to access the plugin's configuration and state
-  //     through the key, without having access to the plugin instance
-  //     itself.
-  //
-  //     view:: ?(EditorView) → Object
-  //     When the plugin needs to interact with the editor view, or
-  //     set something up in the DOM, use this field. The function
-  //     will be called when the plugin's state is associated with an
-  //     editor view.
-  //
-  //       return::-
-  //       Should return an object with the following optional
-  //       properties:
-  //
-  //         update:: ?(view: EditorView, prevState: EditorState)
-  //         Called whenever the view's state is updated.
-  //
-  //         destroy:: ?()
-  //         Called when the view is destroyed or receives a state
-  //         with different plugins.
-  //
-  //     filterTransaction:: ?(Transaction, EditorState) → bool
-  //     When present, this will be called before a transaction is
-  //     applied by the state, allowing the plugin to cancel it (by
-  //     returning false).
-  //
-  //     appendTransaction:: ?(transactions: [Transaction], oldState: EditorState, newState: EditorState) → ?Transaction
-  //     Allows the plugin to append another transaction to be applied
-  //     after the given array of transactions. When another plugin
-  //     appends a transaction after this was called, it is called
-  //     again with the new state and extended array of transactions.
-  constructor(options) {
+  constructor(spec) {
     // :: EditorProps
     // The props exported by this plugin.
     this.props = {}
-    if (options.props) for (let prop in options.props) {
-      let val = options.props[prop]
+    if (spec.props) for (let prop in spec.props) {
+      let val = spec.props[prop]
       if (val instanceof Function) val = val.bind(this)
       this.props[prop] = val
     }
     // :: Object
     // The plugin's configuration object.
-    this.options = options
-    this.key = options.key ? options.key.key : createKey("plugin")
+    this.spec = spec
+    this.key = spec.key ? spec.key.key : createKey("plugin")
+  }
+
+  get options() {
+    if (!warnedAboutOptions && typeof "console" != "undefined" && console.warn) {
+      warnedAboutOptions = true
+      console.warn("Plugin.options was renamed to Plugin.spec")
+    }
+    return this.spec
   }
 
   // :: (EditorState) → any
@@ -108,7 +119,7 @@ function createKey(name) {
   return name + "$"
 }
 
-// ::- A key is used to [tag](#state.Plugin.constructor^options.key)
+// ::- A key is used to [tag](#state.PluginSpec.key)
 // plugins in a way that makes it possible to find them, given an
 // editor state. Assigning a key does mean only one plugin of that
 // type can be active in a state.

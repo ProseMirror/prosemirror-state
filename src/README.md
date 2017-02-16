@@ -27,6 +27,7 @@ c
 To make distributing and using extra editor functionality easier,
 ProseMirror has a plugin system.
 
+@PluginSpec
 @Plugin
 @StateField
 @PluginKey

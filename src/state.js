@@ -50,8 +50,8 @@ class Configuration {
         throw new RangeError("Adding different instances of a keyed plugin (" + plugin.key + ")")
       this.plugins.push(plugin)
       this.pluginsByKey[plugin.key] = plugin
-      if (plugin.options.state)
-        this.fields.push(new FieldDesc(plugin.key, plugin.options.state, plugin))
+      if (plugin.spec.state)
+        this.fields.push(new FieldDesc(plugin.key, plugin.spec.state, plugin))
     })
   }
 }
@@ -100,7 +100,7 @@ class EditorState {
   filterTransaction(tr, ignore = -1) {
     for (let i = 0; i < this.config.plugins.length; i++) if (i != ignore) {
       let plugin = this.config.plugins[i]
-      if (plugin.options.filterTransaction && !plugin.options.filterTransaction.call(plugin, tr, this))
+      if (plugin.spec.filterTransaction && !plugin.spec.filterTransaction.call(plugin, tr, this))
         return false
     }
     return true
@@ -110,7 +110,7 @@ class EditorState {
   // Verbose variant of [`apply`](##state.EditorState.apply) that
   // returns the precise transactions that were applied (which might
   // be influenced by the [transaction
-  // hooks](##state.Plugin.constructor^options.filterTransaction) of
+  // hooks](##state.PluginSpec.filterTransaction) of
   // plugins) along with the new state.
   applyTransaction(tr) {
     if (!this.filterTransaction(tr)) return {state: this, transactions: []}
@@ -123,10 +123,10 @@ class EditorState {
       let haveNew = false
       for (let i = 0; i < this.config.plugins.length; i++) {
         let plugin = this.config.plugins[i]
-        if (plugin.options.appendTransaction) {
+        if (plugin.spec.appendTransaction) {
           let n = seen ? seen[i].n : 0, oldState = seen ? seen[i].state : this
           let tr = n < trs.length &&
-              plugin.options.appendTransaction.call(plugin, n ? trs.slice(n) : trs, oldState, newState)
+              plugin.spec.appendTransaction.call(plugin, n ? trs.slice(n) : trs, oldState, newState)
           if (tr && newState.filterTransaction(tr, i)) {
             if (!seen) {
               seen = []
@@ -202,7 +202,7 @@ class EditorState {
     if (pluginFields) for (let prop in pluginFields) {
       if (prop == "doc" || prop == "selection")
         throw new RangeError("The JSON fields `doc` and `selection` are reserved")
-      let plugin = pluginFields[prop], state = plugin.options.state
+      let plugin = pluginFields[prop], state = plugin.spec.state
       if (state && state.toJSON) result[prop] = state.toJSON.call(plugin, this[plugin.key])
     }
     return result
@@ -225,7 +225,7 @@ class EditorState {
         instance.selection = Selection.fromJSON(instance.doc, json.selection)
       } else {
         if (pluginFields) for (let prop in pluginFields) {
-          let plugin = pluginFields[prop], state = plugin.options.state
+          let plugin = pluginFields[prop], state = plugin.spec.state
           if (plugin.key == field.name && state && state.fromJSON &&
               Object.prototype.hasOwnProperty.call(json, prop)) {
             // This field belongs to a plugin mapped to a JSON field, read it from there.
