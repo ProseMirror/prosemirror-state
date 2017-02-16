@@ -40,12 +40,6 @@ class Transaction extends Transform {
     this.meta = Object.create(null)
   }
 
-  // :: bool
-  // True when this transaction changes the document.
-  get docChanged() {
-    return this.steps.length > 0
-  }
-
   // :: Selection
   // The transform's current selection. This defaults to the
   // editor selection [mapped](#state.Selection.map) through the steps in
