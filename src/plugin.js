@@ -95,7 +95,7 @@ exports.Plugin = Plugin
 //   Initialize the value of this field. `config` will be the object
 //   passed to [`EditorState.create`](#state.EditorState^create). Note
 //   that `instance` is a half-initialized state instance, and will
-//   not have values for any fields initialzed after this one.
+//   not have values for any fields initialized after this one.
 //
 //   apply:: (tr: Transaction, value: T, oldState: EditorState, newState: EditorState) → T
 //   Apply the given transaction to this state field, producing a new

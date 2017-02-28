@@ -13,7 +13,7 @@ const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 // like selection updates and adjustments of the set of [stored
 // marks](##state.EditorState.storedMarks). In addition, you can store
 // metadata properties in a transaction, which are extra pieces of
-// informations that client code or plugins can use to describe what a
+// information that client code or plugins can use to describe what a
 // transacion represents, so that they can update their [own
 // state](##state.StateField) accordingly.
 //

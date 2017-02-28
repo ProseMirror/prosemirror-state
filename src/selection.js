@@ -18,7 +18,7 @@ class Selection {
   }
 
   // :: bool
-  // True if the selection is an empty text selection (head an anchor
+  // True if the selection is an empty text selection (head and anchor
   // are the same).
   get empty() {
     return this.from == this.to
