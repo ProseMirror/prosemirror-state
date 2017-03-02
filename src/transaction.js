@@ -187,15 +187,13 @@ class Transaction extends Transform {
   // :: (Mark) → Transaction
   // Add a mark to the set of stored marks.
   addStoredMark(mark) {
-    this.storedMarks = mark.addToSet(this.storedMarks || currentMarks(this.selection))
-    return this
+    return this.setStoredMarks(mark.addToSet(this.storedMarks || currentMarks(this.selection)))
   }
 
   // :: (union<Mark, MarkType>) → Transaction
   // Remove a mark or mark type from the set of stored marks.
   removeStoredMark(mark) {
-    this.storedMarks = mark.removeFromSet(this.storedMarks || currentMarks(this.selection))
-    return this
+    return this.setStoredMarks(mark.removeFromSet(this.storedMarks || currentMarks(this.selection)))
   }
 }
 exports.Transaction = Transaction
