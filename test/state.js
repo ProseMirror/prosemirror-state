@@ -6,7 +6,7 @@ function selFor(doc) {
   let a = doc.tag.a
   if (a != null) {
     let $a = doc.resolve(a)
-    if ($a.parent.isTextblock) return new TextSelection($a, doc.tag.b != null ? doc.resolve(doc.tag.b) : undefined)
+    if ($a.parent.inlineContent) return new TextSelection($a, doc.tag.b != null ? doc.resolve(doc.tag.b) : undefined)
     else return new NodeSelection($a)
   }
   return Selection.atStart(doc)

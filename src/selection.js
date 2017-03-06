@@ -40,7 +40,7 @@ class Selection {
   // negative. When `textOnly` is true, only consider cursor
   // selections.
   static findFrom($pos, dir, textOnly) {
-    let inner = $pos.parent.isTextblock ? new TextSelection($pos)
+    let inner = $pos.parent.inlineContent ? new TextSelection($pos)
         : findSelectionIn($pos.node(0), $pos.parent, $pos.pos, $pos.index(), dir, textOnly)
     if (inner) return inner
 
@@ -116,7 +116,7 @@ class Selection {
     // are guaranteed to be inside of the document's range).
     if (json.head != null) {
       let $anchor = doc.resolve(json.anchor), $head = doc.resolve(json.head)
-      if ($anchor.parent.isTextblock && $head.parent.isTextblock) return new TextSelection($anchor, $head)
+      if ($anchor.parent.inlineContent && $head.parent.inlineContent) return new TextSelection($anchor, $head)
       else return Selection.between($anchor, $head)
     } else {
       let $pos = doc.resolve(json.node), after = $pos.nodeAfter
@@ -160,9 +160,9 @@ class TextSelection extends Selection {
 
   map(doc, mapping) {
     let $head = doc.resolve(mapping.map(this.head))
-    if (!$head.parent.isTextblock) return Selection.near($head)
+    if (!$head.parent.inlineContent) return Selection.near($head)
     let $anchor = doc.resolve(mapping.map(this.anchor))
-    return new TextSelection($anchor.parent.isTextblock ? $anchor : $head, $head)
+    return new TextSelection($anchor.parent.inlineContent ? $anchor : $head, $head)
   }
 
   toJSON() {
@@ -230,7 +230,7 @@ exports.NodeSelection = NodeSelection
 // position where the search starts. When `text` is true, only return
 // text selections.
 function findSelectionIn(doc, node, pos, index, dir, text) {
-  if (node.isTextblock) return TextSelection.create(doc, pos)
+  if (node.inlineContent) return TextSelection.create(doc, pos)
   for (let i = index - (dir > 0 ? 0 : 1); dir > 0 ? i < node.childCount : i >= 0; i += dir) {
     let child = node.child(i)
     if (!child.isAtom) {
