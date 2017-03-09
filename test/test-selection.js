@@ -1,4 +1,4 @@
-const {schema, eq, doc, blockquote, pre, p, li, ul, img, br, hr} = require("prosemirror-model/test/build")
+const {schema, eq, doc, blockquote, pre, p, li, ul, img, em, a, br, hr} = require("prosemirror-model/test/build")
 const {TestState} = require("./state")
 const ist = require("ist")
 
@@ -62,6 +62,18 @@ describe("Selection", () => {
     state.nodeSel(0)
     state.deleteSelection()
     ist(state.doc, doc(p()), eq)
+  })
+
+  it("preserves the marks of a deleted selection", () => {
+    let state = new TestState({doc: doc(p("foo", em("<a>bar<b>"), "baz"))})
+    state.deleteSelection()
+    ist(state.state.storedMarks.length, 1)
+  })
+
+  it("doesn't preserve non-inclusive marks of a deleted selection", () => {
+    let state = new TestState({doc: doc(p("foo", a(em("<a>bar<b>")), "baz"))})
+    state.deleteSelection()
+    ist(state.state.storedMarks.length, 1)
   })
 
   it("allows deleting a leaf", () => {

@@ -131,8 +131,10 @@ class Transaction extends Transform {
   // :: () → Transaction
   // Delete the selection.
   deleteSelection() {
-    let {from, to} = this.selection
-    return this.deleteRange(from, to)
+    let {from, to, $from} = this.selection
+    this.deleteRange(from, to)
+    if ($from.parentOffset < $from.parent.content.size) this.setStoredMarks($from.marks(true))
+    return this
   }
 
   // :: (string, from: ?number, to: ?number) → Transaction
