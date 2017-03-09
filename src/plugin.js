@@ -48,8 +48,6 @@
 //   appends a transaction after this was called, it is called
 //   again with the new state and extended array of transactions.
 
-let warnedAboutOptions = false
-
 // ::- Plugins wrap extra functionality that can be added to an
 // editor. They can define new [state fields](#state.StateField), and
 // add [view props](#view.EditorProps).
@@ -69,14 +67,6 @@ class Plugin {
     // The plugin's configuration object.
     this.spec = spec
     this.key = spec.key ? spec.key.key : createKey("plugin")
-  }
-
-  get options() {
-    if (!warnedAboutOptions && typeof "console" != "undefined" && console.warn) {
-      warnedAboutOptions = true
-      console.warn("Plugin.options was renamed to Plugin.spec")
-    }
-    return this.spec
   }
 
   // :: (EditorState) → any
