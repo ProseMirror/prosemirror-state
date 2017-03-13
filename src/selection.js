@@ -1,5 +1,7 @@
 let warnedAboutBetween = false
 
+const classesById = Object.create(null)
+
 // ::- Superclass for editor selections.
 class Selection {
   // :: number
@@ -34,7 +36,10 @@ class Selection {
   // should be the new document, to which we are mapping.
 
   // toJSON:: () → Object
-  // Convert the selection to a JSON representation.
+  // Convert the selection to a JSON representation. When implementing
+  // this for a custom selection class, make sure to give the object a
+  // `type` property whose value matches the ID under which you
+  // [registered](#state.Selection^jsonID) your class.
 
   // :: (ResolvedPos, number, ?bool) → ?Selection
   // Find a valid cursor or leaf node selection starting at the given
@@ -88,29 +93,32 @@ class Selection {
     return TextSelection.between($anchor, $head, bias)
   }
 
+  // :: (Object, Mapping) → Object
+  // Map a JSON object representing this selection through a mapping.
+  // Must be implemented for custom selection classes.
   static mapJSON(json, mapping) {
-    if (json.anchor != null)
-      return {head: mapping.map(json.head), anchor: mapping.map(json.anchor)}
-    else
-      return {node: mapping.map(json.node), after: mapping.map(json.after, -1)}
+    return classesById[json.type].mapJSON(json, mapping)
   }
 
   // :: (Node, Object) → Selection
   // Deserialize a JSON representation of a selection.
   static fromJSON(doc, json) {
-    // This is cautious, because the history will blindly map
-    // selections and then try to deserialize them, and the endpoints
-    // might not point at appropriate positions anymore (though they
-    // are guaranteed to be inside of the document's range).
-    if (json.head != null) {
-      let $anchor = doc.resolve(json.anchor), $head = doc.resolve(json.head)
-      if ($anchor.parent.inlineContent && $head.parent.inlineContent) return new TextSelection($anchor, $head)
-      else return TextSelection.between($anchor, $head)
-    } else {
-      let $pos = doc.resolve(json.node), after = $pos.nodeAfter
-      if (after && json.after == json.pos + after.nodeSize && NodeSelection.isSelectable(after)) return new NodeSelection($pos)
-      else return Selection.near($pos)
-    }
+    let cls = classesById[json.type]
+    if (!cls) // Backwards-compat with pre-0.19 JSON format
+      cls = json.anchor != null ? TextSelection : NodeSelection
+    return cls.fromJSON(doc, json)
+  }
+
+  // :: (string, constructor<Selection>)
+  // To be able to deserialize selections from JSON, custom selection
+  // classes must register themselves with an ID string, so that they
+  // can be disambiguated. Try to pick something that's unlikely to
+  // clash with classes from other modules.
+  static jsonID(id, selectionClass) {
+    if (id in classesById) throw new RangeError("Duplicate use of selection JSON ID " + id)
+    classesById[id] = selectionClass
+    selectionClass.prototype.jsonID = id
+    return selectionClass
   }
 }
 exports.Selection = Selection
@@ -154,7 +162,7 @@ class TextSelection extends Selection {
   }
 
   toJSON() {
-    return {head: this.head, anchor: this.anchor}
+    return {type: "text", head: this.head, anchor: this.anchor}
   }
 
   // :: (Node, number, ?number) → TextSelection
@@ -179,8 +187,22 @@ class TextSelection extends Selection {
     }
     return new TextSelection($anchor, $head)
   }
+
+  static fromJSON(doc, json) {
+    // This is cautious, because the history will blindly map
+    // selections and then try to deserialize them, and the endpoints
+    // might not point at appropriate positions anymore (though they
+    // are guaranteed to be inside of the document's range).
+    return TextSelection.between(doc.resolve(json.anchor), doc.resolve(json.head))
+  }
+
+  static mapJSON(json, mapping) {
+    return {type: "text", head: mapping.map(json.head), anchor: mapping.map(json.anchor)}
+  }
 }
 exports.TextSelection = TextSelection
+
+Selection.jsonID("text", TextSelection)
 
 // ::- A node selection is a selection that points at a
 // single node. All nodes marked [selectable](#model.NodeSpec.selectable)
@@ -210,7 +232,7 @@ class NodeSelection extends Selection {
   }
 
   toJSON() {
-    return {node: this.from, after: this.to}
+    return {type: "node", node: this.from, after: this.to}
   }
 
   // :: (Node, number, ?number) → TextSelection
@@ -225,8 +247,20 @@ class NodeSelection extends Selection {
   static isSelectable(node) {
     return !node.isText && node.type.spec.selectable !== false
   }
+
+  static fromJSON(doc, json) {
+    let $pos = doc.resolve(json.node), after = $pos.nodeAfter
+    if (after && json.after == json.pos + after.nodeSize && NodeSelection.isSelectable(after)) return new NodeSelection($pos)
+    else return Selection.near($pos)
+  }
+
+  static mapJSON(json, mapping) {
+    return {type: "node", node: mapping.map(json.node), after: mapping.map(json.after, -1)}
+  }
 }
 exports.NodeSelection = NodeSelection
+
+Selection.jsonID("node", NodeSelection)
 
 // FIXME we'll need some awareness of text direction when scanning for selections
 
