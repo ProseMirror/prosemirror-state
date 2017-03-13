@@ -1,3 +1,5 @@
+let warnedAboutBetween = false
+
 // ::- Superclass for editor selections.
 class Selection {
   // :: number
@@ -78,26 +80,12 @@ class Selection {
     return findSelectionIn(doc, doc, doc.content.size, doc.childCount, -1, textOnly)
   }
 
-  // :: (ResolvedPos, ResolvedPos, ?number) → Selection
-  // Find a selection that spans the given positions, if both are text
-  // positions. If not, return some other selection nearby, where
-  // `bias` determines whether the method searches forward (default)
-  // or backwards (negative number) first.
   static between($anchor, $head, bias) {
-    let found = Selection.near($head, bias)
-    if (found instanceof TextSelection) {
-      let nearAnchor = Selection.findFrom($anchor, $anchor.pos > found.to ? -1 : 1, true)
-      found = new TextSelection(nearAnchor.$anchor, found.$head)
-    } else if ($anchor.pos < found.from || $anchor.pos > found.to) {
-      // If head falls on a node, but anchor falls outside of it, create
-      // a text selection between them
-      let inv = $anchor.pos > found.to
-      let foundAnchor = Selection.findFrom($anchor, inv ? -1 : 1, true)
-      let foundHead = Selection.findFrom(inv ? found.$from : found.$to, inv ? 1 : -1, true)
-      if (foundAnchor && foundHead)
-        found = new TextSelection(foundAnchor.$anchor, foundHead.$head)
+    if (!warnedAboutBetween && typeof console != "undefined" && console.warn) {
+      warnedAboutBetween = true
+      console.warn("Selection.between is now called TextSelection.between")
     }
-    return found
+    return TextSelection.between($anchor, $head, bias)
   }
 
   static mapJSON(json, mapping) {
@@ -117,7 +105,7 @@ class Selection {
     if (json.head != null) {
       let $anchor = doc.resolve(json.anchor), $head = doc.resolve(json.head)
       if ($anchor.parent.inlineContent && $head.parent.inlineContent) return new TextSelection($anchor, $head)
-      else return Selection.between($anchor, $head)
+      else return TextSelection.between($anchor, $head)
     } else {
       let $pos = doc.resolve(json.node), after = $pos.nodeAfter
       if (after && json.after == json.pos + after.nodeSize && NodeSelection.isSelectable(after)) return new NodeSelection($pos)
@@ -174,6 +162,22 @@ class TextSelection extends Selection {
   static create(doc, anchor, head = anchor) {
     let $anchor = doc.resolve(anchor)
     return new this($anchor, head == anchor ? $anchor : doc.resolve(head))
+  }
+
+  // :: (ResolvedPos, ResolvedPos, ?number) → TextSelection
+  // Return a text selection that spans the given positions or, if
+  // they aren't text positions, find a text selection near them.
+  // `bias` determines whether the method searches forward (default)
+  // or backwards (negative number) first.
+  static between($anchor, $head, bias) {
+    let dir = $anchor.pos > $head.pos ? -1 : 1
+    if (!$head.parent.inlineContent)
+      $head = Selection.near($head, bias || -dir, true).$head
+    if (!$anchor.parent.inlineContent) {
+      $anchor = Selection.near($anchor, dir, true).$anchor
+      if (($anchor.pos > $head.pos) != (dir < 0)) $anchor = $head
+    }
+    return new TextSelection($anchor, $head)
   }
 }
 exports.TextSelection = TextSelection
