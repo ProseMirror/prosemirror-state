@@ -161,6 +161,11 @@ class TextSelection extends Selection {
 
   get inverted() { return this.anchor > this.head }
 
+  // :: ?ResolvedPos
+  // Returns a resolved position if this is a cursor selection (an
+  // empty text selection), and null otherwise.
+  get $cursor() { return this.empty ? this.$head : null }
+
   eq(other) {
     return other instanceof TextSelection && other.head == this.head && other.anchor == this.anchor
   }
