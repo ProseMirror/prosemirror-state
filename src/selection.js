@@ -128,6 +128,12 @@ class Selection {
 }
 exports.Selection = Selection
 
+// :: bool
+// Controls whether, when a selection of this type is active in the
+// browser, the selected range should be visible to the user. Defaults
+// to `true`.
+Selection.prototype.visible = true
+
 // ::- A text selection represents a classical editor
 // selection, with a head (the moving side) and anchor (immobile
 // side), both of which point into textblock nodes. It can be empty (a
@@ -254,7 +260,7 @@ class NodeSelection extends Selection {
   }
 
   static fromJSON(doc, json) {
-    let $from = doc.resolve(json.from), node = $pos.nodeAfter
+    let $from = doc.resolve(json.from), node = $from.nodeAfter
     if (node && json.to == json.from + node.nodeSize && NodeSelection.isSelectable(node)) return new NodeSelection($from)
     else return Selection.near($from)
   }
@@ -264,6 +270,8 @@ class NodeSelection extends Selection {
   }
 }
 exports.NodeSelection = NodeSelection
+
+NodeSelection.prototype.visible = false
 
 Selection.jsonID("node", NodeSelection)
 
