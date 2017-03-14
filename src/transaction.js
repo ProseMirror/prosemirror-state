@@ -72,10 +72,20 @@ class Transaction extends Transform {
   }
 
   // :: (?[Mark]) → Transaction
-  // Replace the set of stored marks.
+  // Set the current stored marks.
   setStoredMarks(marks) {
     this.storedMarks = marks
     this.updated |= UPDATED_MARKS
+    return this
+  }
+
+  // :: ([Mark]) → Transaction
+  // Make sure the current stored marks or, if that is null, the marks
+  // at the selection, match the given set of marks. Does nothing if
+  // this is already the case.
+  ensureMarks(marks) {
+    if (!Mark.sameSet(this.storedMarks || this.selection.$from.marks(), marks))
+      this.setStoredMarks(marks.length || this.storedMarks ? marks : null)
     return this
   }
 
@@ -133,7 +143,7 @@ class Transaction extends Transform {
   deleteSelection() {
     let {from, to, $from} = this.selection
     this.deleteRange(from, to)
-    if ($from.parentOffset < $from.parent.content.size) this.setStoredMarks($from.marks(true))
+    if ($from.parentOffset < $from.parent.content.size) this.ensureMarks($from.marks(true))
     return this
   }
 
@@ -189,13 +199,13 @@ class Transaction extends Transform {
   // :: (Mark) → Transaction
   // Add a mark to the set of stored marks.
   addStoredMark(mark) {
-    return this.setStoredMarks(mark.addToSet(this.storedMarks || currentMarks(this.selection)))
+    return this.ensureMarks(mark.addToSet(this.storedMarks || currentMarks(this.selection)))
   }
 
   // :: (union<Mark, MarkType>) → Transaction
   // Remove a mark or mark type from the set of stored marks.
   removeStoredMark(mark) {
-    return this.setStoredMarks(mark.removeFromSet(this.storedMarks || currentMarks(this.selection)))
+    return this.ensureMarks(mark.removeFromSet(this.storedMarks || currentMarks(this.selection)))
   }
 }
 exports.Transaction = Transaction
