@@ -104,9 +104,14 @@ class Selection {
   // Deserialize a JSON representation of a selection.
   static fromJSON(doc, json) {
     let cls = classesById[json.type]
-    if (!cls) // Backwards-compat with pre-0.19 JSON format
-      cls = json.anchor != null ? TextSelection : NodeSelection
+    if (!cls) return this.backwardsCompatFromJSON(doc, json)
     return cls.fromJSON(doc, json)
+  }
+
+  static backwardsCompatFromJSON(doc, json) {
+    if (json.anchor != null) return TextSelection.fromJSON(doc, json)
+    if (json.node != null) return NodeSelection.fromJSON(doc, {from: json.node, to: json.after})
+    throw new RangeError("Unrecognized JSON data " + JSON.stringify(json))
   }
 
   // :: (string, constructor<Selection>)
@@ -232,7 +237,7 @@ class NodeSelection extends Selection {
   }
 
   toJSON() {
-    return {type: "node", node: this.from, after: this.to}
+    return {type: "node", from: this.from, to: this.to}
   }
 
   // :: (Node, number, ?number) → TextSelection
@@ -249,13 +254,13 @@ class NodeSelection extends Selection {
   }
 
   static fromJSON(doc, json) {
-    let $pos = doc.resolve(json.node), after = $pos.nodeAfter
-    if (after && json.after == json.pos + after.nodeSize && NodeSelection.isSelectable(after)) return new NodeSelection($pos)
-    else return Selection.near($pos)
+    let $from = doc.resolve(json.from), node = $pos.nodeAfter
+    if (node && json.to == json.from + node.nodeSize && NodeSelection.isSelectable(node)) return new NodeSelection($from)
+    else return Selection.near($from)
   }
 
   static mapJSON(json, mapping) {
-    return {type: "node", node: mapping.map(json.node), after: mapping.map(json.after, -1)}
+    return {type: "node", from: mapping.map(json.from), to: mapping.map(json.to, -1)}
   }
 }
 exports.NodeSelection = NodeSelection

@@ -57,7 +57,7 @@ describe("State", () => {
     let pluginProps = {count: messageCountPlugin}
     let expected = {doc: {type: "doc", content: [{type: "paragraph", content:
                                                   [{type: "text", text: "ok"}]}]},
-                    selection: {head: 3, anchor: 3},
+                    selection: {type: "text", head: 3, anchor: 3},
                     count: 1}
     let json = state.toJSON(pluginProps)
     ist(JSON.stringify(json), JSON.stringify(expected))
