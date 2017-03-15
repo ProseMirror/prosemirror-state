@@ -199,13 +199,13 @@ class Transaction extends Transform {
   // :: (Mark) → Transaction
   // Add a mark to the set of stored marks.
   addStoredMark(mark) {
-    return this.ensureMarks(mark.addToSet(this.storedMarks || currentMarks(this.selection)))
+    return this.ensureMarks(mark.addToSet(this.storedMarks || this.selection.$head.marks()))
   }
 
   // :: (union<Mark, MarkType>) → Transaction
   // Remove a mark or mark type from the set of stored marks.
   removeStoredMark(mark) {
-    return this.ensureMarks(mark.removeFromSet(this.storedMarks || currentMarks(this.selection)))
+    return this.ensureMarks(mark.removeFromSet(this.storedMarks || this.selection.$head.marks()))
   }
 }
 exports.Transaction = Transaction
@@ -215,8 +215,4 @@ function selectionToInsertionEnd(tr, startLen, bias) {
   let map = tr.mapping.maps[tr.mapping.maps.length - 1], end
   map.forEach((_from, _to, _newFrom, newTo) => end = newTo)
   if (end != null) tr.setSelection(Selection.near(tr.doc.resolve(end), bias))
-}
-
-function currentMarks(selection) {
-  return selection.head == null ? Mark.none : selection.$head.marks()
 }

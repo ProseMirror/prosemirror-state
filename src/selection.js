@@ -4,6 +4,39 @@ const classesById = Object.create(null)
 
 // ::- Superclass for editor selections.
 class Selection {
+  constructor($anchor, $head = $anchor) {
+    // :: ResolvedPos
+    // The resolved anchor of the selection (the side that stays in
+    // place when the selection is modified).
+    this.$anchor = $anchor
+    // :: ResolvedPos
+    // The resolved head of the selection (the side that moves when
+    // the selection is modified).
+    this.$head = $head
+  }
+
+  // :: number
+  // The selection's immobile side (does not move when
+  // shift-selecting).
+  get anchor() { return this.$anchor.pos }
+
+  // :: number
+  // The selection's mobile side (the side that moves when
+  // shift-selecting).
+  get head() { return this.$head.pos }
+
+  // :: ResolvedPos
+  // The resolved lower bound of the selection.
+  get $from() {
+    return this.$head.pos < this.$anchor.pos ? this.$head : this.$anchor
+  }
+
+  // :: ResolvedPos
+  // The resolved upper bound of the selection.
+  get $to() {
+    return this.$head.pos < this.$anchor.pos ? this.$anchor : this.$head
+  }
+
   // :: number
   // The lower bound of the selection.
   get from() { return this.$from.pos }
@@ -12,24 +45,19 @@ class Selection {
   // The upper bound of the selection.
   get to() { return this.$to.pos }
 
-  constructor($from, $to) {
-    // :: ResolvedPos
-    // The resolved lower bound of the selection
-    this.$from = $from
-    // :: ResolvedPos
-    // The resolved upper bound of the selection
-    this.$to = $to
-  }
-
   // :: bool
-  // True if the selection is an empty text selection (head and anchor
-  // are the same).
+  // True if the selection is empty (head and anchor are the same).
   get empty() {
-    return this.from == this.to
+    return this.head == this.anchor
   }
 
-  // eq:: (other: Selection) → bool
-  // Test whether the selection is the same as another selection.
+  // eq:: (Selection) → bool
+  // Test whether the selection is the same as another selection. The
+  // default implementation tests whether they have the same class,
+  // head, and anchor.
+  eq(other) {
+    return other instanceof this.constructor && other.anchor == this.anchor && other.head == this.head
+  }
 
   // map:: (doc: Node, mapping: Mappable) → Selection
   // Map this selection through a [mappable](#transform.Mappable) thing. `doc`
@@ -39,7 +67,11 @@ class Selection {
   // Convert the selection to a JSON representation. When implementing
   // this for a custom selection class, make sure to give the object a
   // `type` property whose value matches the ID under which you
-  // [registered](#state.Selection^jsonID) your class.
+  // [registered](#state.Selection^jsonID) your class. The default
+  // implementation adds `type`, `head`, and `anchor` properties.
+  toJSON() {
+    return {type: this.jsonID, anchor: this.anchor, head: this.head}
+  }
 
   // :: (ResolvedPos, number, ?bool) → ?Selection
   // Find a valid cursor or leaf node selection starting at the given
@@ -93,15 +125,22 @@ class Selection {
     return TextSelection.between($anchor, $head, bias)
   }
 
-  // :: (Object, Mapping) → Object
+  // : (Object, Mapping) → Object
   // Map a JSON object representing this selection through a mapping.
-  // Must be implemented for custom selection classes.
   static mapJSON(json, mapping) {
-    return classesById[json.type].mapJSON(json, mapping)
+    let result = {}
+    for (let prop in json) {
+      let value = json[prop]
+      if (prop == "anchor" || prop == "head")
+        value = mapping.map(value, json.type == "node" && prop == "head" ? -1 : 1)
+      result[prop] = value
+    }
+    return result
   }
 
   // :: (Node, Object) → Selection
-  // Deserialize a JSON representation of a selection.
+  // Deserialize a JSON representation of a selection. Must be
+  // implemented for custom classes (as a static class method).
   static fromJSON(doc, json) {
     let cls = classesById[json.type]
     if (!cls) return this.backwardsCompatFromJSON(doc, json)
@@ -110,7 +149,7 @@ class Selection {
 
   static backwardsCompatFromJSON(doc, json) {
     if (json.anchor != null) return TextSelection.fromJSON(doc, json)
-    if (json.node != null) return NodeSelection.fromJSON(doc, {from: json.node, to: json.after})
+    if (json.node != null) return NodeSelection.fromJSON(doc, {anchor: json.node, head: json.after})
     throw new RangeError("Unrecognized JSON data " + JSON.stringify(json))
   }
 
@@ -139,46 +178,16 @@ Selection.prototype.visible = true
 // side), both of which point into textblock nodes. It can be empty (a
 // regular cursor position).
 class TextSelection extends Selection {
-  // :: number
-  // The selection's immobile side (does not move when pressing
-  // shift-arrow).
-  get anchor() { return this.$anchor.pos }
-  // :: number
-  // The selection's mobile side (the side that moves when pressing
-  // shift-arrow).
-  get head() { return this.$head.pos }
-
-  // :: (ResolvedPos, ?ResolvedPos)
-  // Construct a text selection.
-  constructor($anchor, $head = $anchor) {
-    let inv = $anchor.pos > $head.pos
-    super(inv ? $head : $anchor, inv ? $anchor : $head)
-    // :: ResolvedPos The resolved anchor of the selection.
-    this.$anchor = $anchor
-    // :: ResolvedPos The resolved head of the selection.
-    this.$head = $head
-  }
-
-  get inverted() { return this.anchor > this.head }
-
   // :: ?ResolvedPos
   // Returns a resolved position if this is a cursor selection (an
   // empty text selection), and null otherwise.
   get $cursor() { return this.empty ? this.$head : null }
-
-  eq(other) {
-    return other instanceof TextSelection && other.head == this.head && other.anchor == this.anchor
-  }
 
   map(doc, mapping) {
     let $head = doc.resolve(mapping.map(this.head))
     if (!$head.parent.inlineContent) return Selection.near($head)
     let $anchor = doc.resolve(mapping.map(this.anchor))
     return new TextSelection($anchor.parent.inlineContent ? $anchor : $head, $head)
-  }
-
-  toJSON() {
-    return {type: "text", head: this.head, anchor: this.anchor}
   }
 
   // :: (Node, number, ?number) → TextSelection
@@ -211,10 +220,6 @@ class TextSelection extends Selection {
     // are guaranteed to be inside of the document's range).
     return TextSelection.between(doc.resolve(json.anchor), doc.resolve(json.head))
   }
-
-  static mapJSON(json, mapping) {
-    return {type: "text", head: mapping.map(json.head), anchor: mapping.map(json.anchor)}
-  }
 }
 exports.TextSelection = TextSelection
 
@@ -235,20 +240,12 @@ class NodeSelection extends Selection {
     this.node = $from.nodeAfter
   }
 
-  eq(other) {
-    return other instanceof NodeSelection && this.from == other.from
-  }
-
   map(doc, mapping) {
-    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
+    let from = mapping.mapResult(this.anchor, 1), to = mapping.mapResult(this.head, -1)
     let $from = doc.resolve(from.pos), node = $from.nodeAfter
     if (!from.deleted && !to.deleted && node && to.pos == from.pos + node.nodeSize && NodeSelection.isSelectable(node))
       return new NodeSelection($from)
     return Selection.near($from)
-  }
-
-  toJSON() {
-    return {type: "node", from: this.from, to: this.to}
   }
 
   // :: (Node, number, ?number) → TextSelection
@@ -265,13 +262,9 @@ class NodeSelection extends Selection {
   }
 
   static fromJSON(doc, json) {
-    let $from = doc.resolve(json.from), node = $from.nodeAfter
-    if (node && json.to == json.from + node.nodeSize && NodeSelection.isSelectable(node)) return new NodeSelection($from)
+    let $from = doc.resolve(json.anchor), node = $from.nodeAfter
+    if (node && json.head == json.anchor + node.nodeSize && NodeSelection.isSelectable(node)) return new NodeSelection($from)
     else return Selection.near($from)
-  }
-
-  static mapJSON(json, mapping) {
-    return {type: "node", from: mapping.map(json.from), to: mapping.map(json.to, -1)}
   }
 }
 exports.NodeSelection = NodeSelection
