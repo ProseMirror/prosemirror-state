@@ -85,7 +85,7 @@ class Transaction extends Transform {
   // this is already the case.
   ensureMarks(marks) {
     if (!Mark.sameSet(this.storedMarks || this.selection.$from.marks(), marks))
-      this.setStoredMarks(marks.length || this.storedMarks ? marks : null)
+      this.setStoredMarks(marks)
     return this
   }
 
