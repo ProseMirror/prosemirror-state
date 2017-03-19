@@ -1,3 +1,5 @@
+const {TextSelection} = require("../dist")
+
 const {schema, eq, doc, blockquote, pre, p, li, ul, img, em, a, br, hr} = require("prosemirror-model/test/build")
 const {TestState} = require("./state")
 const ist = require("ist")
@@ -130,5 +132,34 @@ describe("Selection", () => {
     state.apply(state.tr.replaceSelectionWith(schema.node("paragraph")))
     ist(state.doc, doc(p("abc"), pre(), hr, p()), eq)
     ist(state.selection.from, 9)
+  })
+})
+
+describe("TextSelection.between", () => {
+  it("uses arguments when possible", () => {
+    let d = doc(p("f<a>o<b>o"))
+    let s = TextSelection.between(d.resolve(d.tag.b), d.resolve(d.tag.a))
+    ist(s.anchor, d.tag.b)
+    ist(s.head, d.tag.a)
+  })
+
+  it("will adjust when necessary", () => {
+    let d = doc("<a>", p("foo"))
+    let s = TextSelection.between(d.resolve(d.tag.a), d.resolve(d.tag.a))
+    ist(s.anchor, 1)
+  })
+
+  it("uses bias when adjusting", () => {
+    let d = doc(p("foo"), "<a>", p("bar"))
+    let sUp = TextSelection.between(d.resolve(d.tag.a), d.resolve(d.tag.a), -1)
+    ist(sUp.anchor, 4)
+    let sDown = TextSelection.between(d.resolve(d.tag.a), d.resolve(d.tag.a), 1)
+    ist(sDown.anchor, 6)
+  })
+
+  it("will fall back to a node selection", () => {
+    let d = doc(hr, "<a>")
+    let s = TextSelection.between(d.resolve(d.tag.a), d.resolve(d.tag.a))
+    ist(s.node, d.firstChild)
   })
 })

@@ -197,19 +197,21 @@ class TextSelection extends Selection {
     return new this($anchor, head == anchor ? $anchor : doc.resolve(head))
   }
 
-  // :: (ResolvedPos, ResolvedPos, ?number) → TextSelection
+  // :: (ResolvedPos, ResolvedPos, ?number) → Selection
   // Return a text selection that spans the given positions or, if
   // they aren't text positions, find a text selection near them.
   // `bias` determines whether the method searches forward (default)
-  // or backwards (negative number) first.
+  // or backwards (negative number) first. Will fall back to returning
+  // a node selection when the document doesn't contain a valid text
+  // position.
   static between($anchor, $head, bias) {
-    let dir = $anchor.pos > $head.pos ? -1 : 1
-    if (!$head.parent.inlineContent)
-      $head = Selection.near($head, bias || -dir, true).$head
-    if (!$anchor.parent.inlineContent) {
-      $anchor = Selection.near($anchor, dir, true).$anchor
-      if (($anchor.pos > $head.pos) != (dir < 0)) $anchor = $head
+    if (!$head.parent.inlineContent) {
+      let found = Selection.findFrom($head, bias, true) || Selection.findFrom($head, -bias, true)
+      if (found) $head = found.$head
+      else return Selection.near($head, bias)
     }
+    if (!$anchor.parent.inlineContent)
+      $anchor = (Selection.findFrom($anchor, bias, true) || Selection.findFrom($anchor, -bias, true)).$anchor
     return new TextSelection($anchor, $head)
   }
 
