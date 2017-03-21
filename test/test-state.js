@@ -1,5 +1,5 @@
 const {EditorState, TextSelection, Plugin, PluginKey} = require("../dist")
-const {schema, eq, doc, p} = require("prosemirror-model/test/build")
+const {schema, eq, doc, p} = require("prosemirror-test-builder")
 const ist = require("ist")
 
 const messageCountKey = new PluginKey("messageCount")
