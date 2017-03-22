@@ -205,13 +205,21 @@ class TextSelection extends Selection {
   // a node selection when the document doesn't contain a valid text
   // position.
   static between($anchor, $head, bias) {
+    let dPos = $anchor.pos - $head.pos
+    if (!bias || dPos) bias = dPos >= 0 ? 1 : -1
     if (!$head.parent.inlineContent) {
       let found = Selection.findFrom($head, bias, true) || Selection.findFrom($head, -bias, true)
       if (found) $head = found.$head
       else return Selection.near($head, bias)
     }
-    if (!$anchor.parent.inlineContent)
-      $anchor = (Selection.findFrom($anchor, bias, true) || Selection.findFrom($anchor, -bias, true)).$anchor
+    if (!$anchor.parent.inlineContent) {
+      if (dPos == 0) {
+        $anchor = $head
+      } else {
+        $anchor = (Selection.findFrom($anchor, -bias, true) || Selection.findFrom($anchor, bias, true)).$anchor
+        if (($anchor.pos < $head.pos) != (dPos < 0)) $anchor = $head
+      }
+    }
     return new TextSelection($anchor, $head)
   }
 

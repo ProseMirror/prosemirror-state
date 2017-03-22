@@ -150,10 +150,10 @@ describe("TextSelection.between", () => {
   })
 
   it("uses bias when adjusting", () => {
-    let d = doc(p("foo"), "<a>", p("bar"))
-    let sUp = TextSelection.between(d.resolve(d.tag.a), d.resolve(d.tag.a), -1)
+    let d = doc(p("foo"), "<a>", p("bar")), pos = d.resolve(d.tag.a)
+    let sUp = TextSelection.between(pos, pos, -1)
     ist(sUp.anchor, 4)
-    let sDown = TextSelection.between(d.resolve(d.tag.a), d.resolve(d.tag.a), 1)
+    let sDown = TextSelection.between(pos, pos, 1)
     ist(sDown.anchor, 6)
   })
 
@@ -161,5 +161,15 @@ describe("TextSelection.between", () => {
     let d = doc(hr, "<a>")
     let s = TextSelection.between(d.resolve(d.tag.a), d.resolve(d.tag.a))
     ist(s.node, d.firstChild)
+  })
+
+  it("will collapse towards the other argument", () => {
+    let d = doc("<a>", p("foo"), "<b>")
+    let s = TextSelection.between(d.resolve(d.tag.a), d.resolve(d.tag.b))
+    ist(s.anchor, 1)
+    ist(s.head, 4)
+    s = TextSelection.between(d.resolve(d.tag.b), d.resolve(d.tag.a))
+    ist(s.anchor, 4)
+    ist(s.head, 1)
   })
 })
