@@ -128,6 +128,7 @@ class EditorState {
           let tr = n < trs.length &&
               plugin.spec.appendTransaction.call(plugin, n ? trs.slice(n) : trs, oldState, newState)
           if (tr && newState.filterTransaction(tr, i)) {
+            tr.setMeta("appendedTransaction", tr)
             if (!seen) {
               seen = []
               for (let j = 0; j < this.config.plugins.length; j++)
