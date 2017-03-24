@@ -1,3 +1,5 @@
+const {Slice, Fragment} = require("prosemirror-model")
+
 let warnedAboutBetween = false
 
 const classesById = Object.create(null)
@@ -62,6 +64,9 @@ class Selection {
   // map:: (doc: Node, mapping: Mappable) → Selection
   // Map this selection through a [mappable](#transform.Mappable) thing. `doc`
   // should be the new document, to which we are mapping.
+
+  // content:: () → Slice
+  // Get the content of this selection as a slice.
 
   // toJSON:: () → Object
   // Convert the selection to a JSON representation. When implementing
@@ -190,6 +195,10 @@ class TextSelection extends Selection {
     return new TextSelection($anchor.parent.inlineContent ? $anchor : $head, $head)
   }
 
+  content() {
+    return this.$anchor.node(0).slice(this.from, this.to, true)
+  }
+
   // :: (Node, number, ?number) → TextSelection
   // Create a text selection from non-resolved positions.
   static create(doc, anchor, head = anchor) {
@@ -256,6 +265,10 @@ class NodeSelection extends Selection {
     if (!from.deleted && !to.deleted && node && to.pos == from.pos + node.nodeSize && NodeSelection.isSelectable(node))
       return new NodeSelection($from)
     return Selection.near($from)
+  }
+
+  content() {
+    return new Slice(Fragment.from(this.node), 0, 0)
   }
 
   // :: (Node, number, ?number) → TextSelection
