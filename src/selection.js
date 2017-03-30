@@ -6,7 +6,14 @@ const classesById = Object.create(null)
 
 // ::- Superclass for editor selections.
 class Selection {
-  constructor($anchor, $head = $anchor) {
+  // :: (ResolvedPos, ResolvedPos, ?[SelectionRange])
+  // Initialize a selection with the head and anchor and ranges. If no
+  // ranges are given, constructs a single range across `$anchor` and
+  // `$head`.
+  constructor($anchor, $head, ranges) {
+    // :: [SelectionRange]
+    // The ranges covered by the selection.
+    this.ranges = ranges || [new SelectionRange($anchor.min($head), $anchor.max($head))]
     // :: ResolvedPos
     // The resolved anchor of the selection (the side that stays in
     // place when the selection is modified).
@@ -27,46 +34,88 @@ class Selection {
   // shift-selecting).
   get head() { return this.$head.pos }
 
-  // :: ResolvedPos
-  // The resolved lower bound of the selection.
-  get $from() {
-    return this.$head.pos < this.$anchor.pos ? this.$head : this.$anchor
-  }
-
-  // :: ResolvedPos
-  // The resolved upper bound of the selection.
-  get $to() {
-    return this.$head.pos < this.$anchor.pos ? this.$anchor : this.$head
-  }
-
   // :: number
-  // The lower bound of the selection.
+  // The lower bound of the selection's first range.
   get from() { return this.$from.pos }
 
   // :: number
-  // The upper bound of the selection.
+  // The upper bound of the selection's first range.
   get to() { return this.$to.pos }
 
+  // :: ResolvedPos
+  // The resolved lower  bound of the selection's main range.
+  get $from() {
+    return this.ranges[0].$from
+  }
+
+  // :: ResolvedPos
+  // The resolved upper bound of the selection's main range.
+  get $to() {
+    return this.ranges[0].$to
+  }
+
   // :: bool
-  // True if the selection is empty (head and anchor are the same).
+  // Indicates whether the selection contains any content.
   get empty() {
-    return this.head == this.anchor
+    let ranges = this.ranges
+    for (let i = 0; i < ranges.length; i++)
+      if (ranges[i].$from.pos != ranges[i].$to.pos) return false
+    return true
   }
 
   // eq:: (Selection) → bool
   // Test whether the selection is the same as another selection. The
   // default implementation tests whether they have the same class,
   // head, and anchor.
-  eq(other) {
-    return other instanceof this.constructor && other.anchor == this.anchor && other.head == this.head
-  }
 
   // map:: (doc: Node, mapping: Mappable) → Selection
   // Map this selection through a [mappable](#transform.Mappable) thing. `doc`
   // should be the new document, to which we are mapping.
 
-  // content:: () → Slice
+  // :: Slice
   // Get the content of this selection as a slice.
+  content() {
+    return this.$from.node(0).slice(this.from, this.to, true)
+  }
+
+  // :: (Transaction, ?Slice)
+  // Replace the selection with a slice or, if no slice is given,
+  // delete the selection. Will append to the given transaction.
+  replace(tr, content = Slice.empty) {
+    // Put the new selection at the position after the inserted
+    // content. When that ended in an inline node, search backwards,
+    // to get the position after that node. If not, search forward.
+    let lastNode = content.content.lastChild, lastParent = null
+    for (let i = 0; i < content.openRight; i++) {
+      lastParent = lastNode
+      lastNode = lastNode.lastChild
+    }
+
+    let mapFrom = tr.steps.length, ranges = this.ranges
+    for (let i = 0; i < ranges.length; i++) {
+      let {$from, $to} = ranges[i], mapping = tr.mapping.slice(mapFrom)
+      tr.replaceRange(mapping.map($from.pos), mapping.map($to.pos), i ? Slice.empty : content)
+      if (i == 0)
+        selectionToInsertionEnd(tr, mapFrom, (lastNode ? lastNode.isInline : lastParent && lastParent.isTextblock) ? -1 : 1)
+    }
+  }
+
+  // :: (Transaction, Node)
+  // Replace the selection with the given node, appending the changes
+  // to the given transaction.
+  replaceWith(tr, node) {
+    let mapFrom = tr.steps.length, ranges = this.ranges
+    for (let i = 0; i < ranges.length; i++) {
+      let {$from, $to} = ranges[i], mapping = tr.mapping.slice(mapFrom)
+      let from = mapping.map($from.pos), to = mapping.map($to.pos)
+      if (i) {
+        tr.deleteRange(from, to)
+      } else {
+        tr.replaceRangeWith(from, to, node)
+        selectionToInsertionEnd(tr, mapFrom, node.isInline ? -1 : 1)
+      }
+    }
+  }
 
   // toJSON:: () → Object
   // Convert the selection to a JSON representation. When implementing
@@ -74,9 +123,6 @@ class Selection {
   // `type` property whose value matches the ID under which you
   // [registered](#state.Selection^jsonID) your class. The default
   // implementation adds `type`, `head`, and `anchor` properties.
-  toJSON() {
-    return {type: this.jsonID, anchor: this.anchor, head: this.head}
-  }
 
   // :: (ResolvedPos, number, ?bool) → ?Selection
   // Find a valid cursor or leaf node selection starting at the given
@@ -178,15 +224,35 @@ exports.Selection = Selection
 // to `true`.
 Selection.prototype.visible = true
 
+// ::- Represents a selected range in a document.
+class SelectionRange {
+  // :: (ResolvedPos, ResolvedPos)
+  constructor($from, $to) {
+    // :: ResolvedPos
+    // The lower bound of the range.
+    this.$from = $from
+    // :: ResolvedPos
+    // The upper bound of the range.
+    this.$to = $to
+  }
+}
+exports.SelectionRange = SelectionRange
+
 // ::- A text selection represents a classical editor
 // selection, with a head (the moving side) and anchor (immobile
 // side), both of which point into textblock nodes. It can be empty (a
 // regular cursor position).
 class TextSelection extends Selection {
+  // :: (ResolvedPos, ?ResolvedPos)
+  // Construct a text selection between the given points.
+  constructor($anchor, $head = $anchor) {
+    super($anchor, $head)
+  }
+
   // :: ?ResolvedPos
   // Returns a resolved position if this is a cursor selection (an
   // empty text selection), and null otherwise.
-  get $cursor() { return this.empty ? this.$head : null }
+  get $cursor() { return this.$anchor.pos == this.$head.pos ? this.$head : null }
 
   map(doc, mapping) {
     let $head = doc.resolve(mapping.map(this.head))
@@ -195,8 +261,20 @@ class TextSelection extends Selection {
     return new TextSelection($anchor.parent.inlineContent ? $anchor : $head, $head)
   }
 
-  content() {
-    return this.$anchor.node(0).slice(this.from, this.to, true)
+  replace(tr, content = Slice.empty) {
+    super.replace(tr, content)
+    if (content == Slice.empty) {
+      if (this.$from.parentOffset < this.$from.parent.content.size)
+        tr.ensureMarks(this.$from.marks(true))
+    }
+  }
+
+  eq(other) {
+    return other instanceof TextSelection && other.anchor == this.anchor && other.head == this.head
+  }
+
+  toJSON() {
+    return {type: "text", anchor: this.anchor, head: this.head}
   }
 
   // :: (Node, number, ?number) → TextSelection
@@ -252,23 +330,31 @@ class NodeSelection extends Selection {
   // :: (ResolvedPos)
   // Create a node selection. Does not verify the validity of its
   // argument.
-  constructor($from) {
-    let $to = $from.node(0).resolve($from.pos + $from.nodeAfter.nodeSize)
-    super($from, $to)
+  constructor($pos) {
+    let node = $pos.nodeAfter
+    let $end = $pos.node(0).resolve($pos.pos + node.nodeSize)
+    super($pos, $end)
     // :: Node The selected node.
-    this.node = $from.nodeAfter
+    this.node = node
   }
 
   map(doc, mapping) {
-    let from = mapping.mapResult(this.anchor, 1), to = mapping.mapResult(this.head, -1)
-    let $from = doc.resolve(from.pos), node = $from.nodeAfter
-    if (!from.deleted && !to.deleted && node && to.pos == from.pos + node.nodeSize && NodeSelection.isSelectable(node))
-      return new NodeSelection($from)
-    return Selection.near($from)
+    let {deleted, pos} = mapping.mapResult(this.anchor, 1)
+    let $pos = doc.resolve(pos)
+    if (deleted) return Selection.near($pos)
+    return new NodeSelection($pos)
   }
 
   content() {
     return new Slice(Fragment.from(this.node), 0, 0)
+  }
+
+  toJSON() {
+    return {type: "node", anchor: this.anchor}
+  }
+
+  eq(other) {
+    return other instanceof NodeSelection && other.anchor == this.anchor
   }
 
   // :: (Node, number, ?number) → TextSelection
@@ -285,9 +371,9 @@ class NodeSelection extends Selection {
   }
 
   static fromJSON(doc, json) {
-    let $from = doc.resolve(json.anchor), node = $from.nodeAfter
-    if (node && json.head == json.anchor + node.nodeSize && NodeSelection.isSelectable(node)) return new NodeSelection($from)
-    else return Selection.near($from)
+    let $pos = doc.resolve(json.anchor), node = $pos.nodeAfter
+    if (node && NodeSelection.isSelectable(node)) return new NodeSelection($pos)
+    return Selection.near($pos)
   }
 }
 exports.NodeSelection = NodeSelection
@@ -313,4 +399,11 @@ function findSelectionIn(doc, node, pos, index, dir, text) {
     }
     pos += child.nodeSize * dir
   }
+}
+
+function selectionToInsertionEnd(tr, startLen, bias) {
+  if (tr.steps.length == startLen) return
+  let map = tr.mapping.maps[tr.mapping.maps.length - 1], end
+  map.forEach((_from, _to, _newFrom, newTo) => end = newTo)
+  if (end != null) tr.setSelection(Selection.near(tr.doc.resolve(end), bias))
 }

@@ -1,6 +1,5 @@
 const {Transform} = require("prosemirror-transform")
 const {Mark} = require("prosemirror-model")
-const {Selection} = require("./selection")
 
 const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 
@@ -110,17 +109,7 @@ class Transaction extends Transform {
 
   // :: (Slice) → Transaction
   replaceSelection(slice) {
-    let {from, to} = this.selection, startLen = this.steps.length
-    this.replaceRange(from, to, slice)
-    // Move the selection to the position after the inserted content.
-    // When that ended in an inline node, search backwards, to get the
-    // position after that node. If not, search forward.
-    let lastNode = slice.content.lastChild, lastParent = null
-    for (let i = 0; i < slice.openRight; i++) {
-      lastParent = lastNode
-      lastNode = lastNode.lastChild
-    }
-    selectionToInsertionEnd(this, startLen, (lastNode ? lastNode.isInline : lastParent && lastParent.isTextblock) ? -1 : 1)
+    this.selection.replace(this, slice)
     return this
   }
 
@@ -130,20 +119,17 @@ class Transaction extends Transform {
   // is inline, it inherits the marks from the place where it is
   // inserted.
   replaceSelectionWith(node, inheritMarks) {
-    let {$from, from, to} = this.selection, startLen = this.steps.length
+    let selection = this.selection
     if (inheritMarks !== false)
-      node = node.mark(this.storedMarks || $from.marks(to > from))
-    this.replaceRangeWith(from, to, node)
-    selectionToInsertionEnd(this, startLen, node.isInline ? -1 : 1)
+      node = node.mark(this.storedMarks || selection.$from.marks(selection.to > selection.from))
+    selection.replaceWith(this, node)
     return this
   }
 
   // :: () → Transaction
   // Delete the selection.
   deleteSelection() {
-    let {from, to, $from} = this.selection
-    this.deleteRange(from, to)
-    if ($from.parentOffset < $from.parent.content.size) this.ensureMarks($from.marks(true))
+    this.selection.replace(this)
     return this
   }
 
@@ -209,10 +195,3 @@ class Transaction extends Transform {
   }
 }
 exports.Transaction = Transaction
-
-function selectionToInsertionEnd(tr, startLen, bias) {
-  if (tr.steps.length == startLen) return
-  let map = tr.mapping.maps[tr.mapping.maps.length - 1], end
-  map.forEach((_from, _to, _newFrom, newTo) => end = newTo)
-  if (end != null) tr.setSelection(Selection.near(tr.doc.resolve(end), bias))
-}

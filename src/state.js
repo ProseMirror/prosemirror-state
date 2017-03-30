@@ -28,7 +28,7 @@ const baseFields = [
 
   new FieldDesc("storedMarks", {
     init() { return null },
-    apply(tr, _marks, _old, state) { return state.selection.empty ? tr.storedMarks : null }
+    apply(tr, _marks, _old, state) { return state.selection.$cursor ? tr.storedMarks : null }
   }),
 
   new FieldDesc("scrollToSelection", {

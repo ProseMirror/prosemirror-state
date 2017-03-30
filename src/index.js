@@ -1,4 +1,5 @@
 ;({Selection: exports.Selection,
+   SelectionRange: exports.SelectionRange,
    TextSelection: exports.TextSelection,
    NodeSelection: exports.NodeSelection} = require("./selection"))
 
