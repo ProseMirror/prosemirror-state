@@ -1,7 +1,5 @@
 const {Slice, Fragment} = require("prosemirror-model")
 
-let warnedAboutBetween = false
-
 const classesById = Object.create(null)
 
 // ::- Superclass for editor selections.
@@ -166,14 +164,6 @@ class Selection {
   // selections.
   static atEnd(doc, textOnly) {
     return findSelectionIn(doc, doc, doc.content.size, doc.childCount, -1, textOnly)
-  }
-
-  static between($anchor, $head, bias) {
-    if (!warnedAboutBetween && typeof console != "undefined" && console.warn) {
-      warnedAboutBetween = true
-      console.warn("Selection.between is now called TextSelection.between")
-    }
-    return TextSelection.between($anchor, $head, bias)
   }
 
   // :: (Node, Object) → Selection
