@@ -176,19 +176,6 @@ class Selection {
     return TextSelection.between($anchor, $head, bias)
   }
 
-  // : (Object, Mapping) → Object
-  // Map a JSON object representing this selection through a mapping.
-  static mapJSON(json, mapping) {
-    let result = {}
-    for (let prop in json) {
-      let value = json[prop]
-      if (prop == "anchor" || prop == "head")
-        value = mapping.map(value, json.type == "node" && prop == "head" ? -1 : 1)
-      result[prop] = value
-    }
-    return result
-  }
-
   // :: (Node, Object) → Selection
   // Deserialize a JSON representation of a selection. Must be
   // implemented for custom classes (as a static class method).
@@ -215,6 +202,18 @@ class Selection {
     selectionClass.prototype.jsonID = id
     return selectionClass
   }
+
+  // :: () → SelectionBookmark
+  // Get a [bookmark](#state.SelectionBookmark) for this selection,
+  // which is a value that can be mapped without having access to a
+  // current document, and later resolved to a real selection for a
+  // given document again. (This is used mostly by the history to
+  // track and restore old selections.) The default implementation of
+  // this method just converts the selection to a text selection and
+  // returns the bookmark for that.
+  getBookmark() {
+    return TextSelection.between(this.anchor, this.head).getBookmark()
+  }
 }
 exports.Selection = Selection
 
@@ -223,6 +222,20 @@ exports.Selection = Selection
 // browser, the selected range should be visible to the user. Defaults
 // to `true`.
 Selection.prototype.visible = true
+
+// SelectionBookmark:: interface
+// A lightweight, document-independent representation of a selection.
+// You can define a custom bookmark type for a custom selection class
+// to make the history handle it well.
+//
+//   map:: (mapping: Mapping) → SelectionBookmark
+//   Map the bookmark through a set of changes.
+//
+//   resolve:: (doc: Node) → Selection
+//   Resolve the bookmark to a real selection again. This may need to
+//   do some error checking and may fall back to a default (usually
+//   [`TextSelection.between`](#state.TextSelection.between) if
+//   mapping made the bookmark invalid.
 
 // ::- Represents a selected range in a document.
 class SelectionRange {
@@ -238,10 +251,10 @@ class SelectionRange {
 }
 exports.SelectionRange = SelectionRange
 
-// ::- A text selection represents a classical editor
-// selection, with a head (the moving side) and anchor (immobile
-// side), both of which point into textblock nodes. It can be empty (a
-// regular cursor position).
+// ::- A text selection represents a classical editor selection, with
+// a head (the moving side) and anchor (immobile side), both of which
+// point into textblock nodes. It can be empty (a regular cursor
+// position).
 class TextSelection extends Selection {
   // :: (ResolvedPos, ?ResolvedPos)
   // Construct a text selection between the given points.
@@ -273,8 +286,16 @@ class TextSelection extends Selection {
     return other instanceof TextSelection && other.anchor == this.anchor && other.head == this.head
   }
 
+  getBookmark() {
+    return new TextBookmark(this.anchor, this.head)
+  }
+
   toJSON() {
     return {type: "text", anchor: this.anchor, head: this.head}
+  }
+
+  static fromJSON(doc, json) {
+    return new TextSelection(doc.resolve(json.anchor), doc.resolve(json.head))
   }
 
   // :: (Node, number, ?number) → TextSelection
@@ -309,18 +330,23 @@ class TextSelection extends Selection {
     }
     return new TextSelection($anchor, $head)
   }
-
-  static fromJSON(doc, json) {
-    // This is cautious, because the history will blindly map
-    // selections and then try to deserialize them, and the endpoints
-    // might not point at appropriate positions anymore (though they
-    // are guaranteed to be inside of the document's range).
-    return TextSelection.between(doc.resolve(json.anchor), doc.resolve(json.head))
-  }
 }
 exports.TextSelection = TextSelection
 
 Selection.jsonID("text", TextSelection)
+
+class TextBookmark {
+  constructor(anchor, head) {
+    this.anchor = anchor
+    this.head = head
+  }
+  map(mapping) {
+    return new TextBookmark(mapping.map(this.anchor), mapping.map(this.head))
+  }
+  resolve(doc) {
+    return TextSelection.between(doc.resolve(this.anchor), doc.resolve(this.head))
+  }
+}
 
 // ::- A node selection is a selection that points at a
 // single node. All nodes marked [selectable](#model.NodeSpec.selectable)
@@ -339,7 +365,7 @@ class NodeSelection extends Selection {
   }
 
   map(doc, mapping) {
-    let {deleted, pos} = mapping.mapResult(this.anchor, 1)
+    let {deleted, pos} = mapping.mapResult(this.anchor)
     let $pos = doc.resolve(pos)
     if (deleted) return Selection.near($pos)
     return new NodeSelection($pos)
@@ -349,12 +375,16 @@ class NodeSelection extends Selection {
     return new Slice(Fragment.from(this.node), 0, 0)
   }
 
+  eq(other) {
+    return other instanceof NodeSelection && other.anchor == this.anchor
+  }
+
   toJSON() {
     return {type: "node", anchor: this.anchor}
   }
 
-  eq(other) {
-    return other instanceof NodeSelection && other.anchor == this.anchor
+  static fromJSON(doc, json) {
+    return new NodeSelection(doc.resolve(json.anchor))
   }
 
   // :: (Node, number, ?number) → TextSelection
@@ -369,18 +399,27 @@ class NodeSelection extends Selection {
   static isSelectable(node) {
     return !node.isText && node.type.spec.selectable !== false
   }
-
-  static fromJSON(doc, json) {
-    let $pos = doc.resolve(json.anchor), node = $pos.nodeAfter
-    if (node && NodeSelection.isSelectable(node)) return new NodeSelection($pos)
-    return Selection.near($pos)
-  }
 }
 exports.NodeSelection = NodeSelection
 
 NodeSelection.prototype.visible = false
 
 Selection.jsonID("node", NodeSelection)
+
+class NodeBookmark {
+  constructor(anchor) {
+    this.anchor = anchor
+  }
+  map(mapping) {
+    let {deleted, pos} = mapping.mapResult(this.anchor)
+    return deleted ? new TextBookmark(pos, pos) : new NodeBookmark(pos)
+  }
+  resolve(doc) {
+    let $pos = doc.resolve(this.anchor), node = $pos.nodeAfter
+    if (node && NodeSelection.isSelectable(node)) return new NodeSelection($pos)
+    return Selection.near($pos)
+  }
+}
 
 // FIXME we'll need some awareness of text direction when scanning for selections
 
