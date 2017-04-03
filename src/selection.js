@@ -418,6 +418,8 @@ class NodeBookmark {
 // there are for example leaf block nodes at the start or end of the
 // document).
 class AllSelection extends Selection {
+  // :: (Node)
+  // Create an all-selection over the given document.
   constructor(doc) {
     super(doc.resolve(0), doc.resolve(doc.content.size))
   }
