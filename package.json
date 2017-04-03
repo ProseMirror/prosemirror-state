@@ -1,6 +1,6 @@
 {
   "name": "prosemirror-state",
-  "version": "0.19.1",
+  "version": "0.20.0",
   "description": "ProseMirror editor state",
   "main": "dist/index.js",
   "license": "MIT",
@@ -16,15 +16,15 @@
     "url": "git://github.com/prosemirror/prosemirror.git"
   },
   "dependencies": {
-    "prosemirror-model": "^0.19.0",
-    "prosemirror-transform": "^0.19.0"
+    "prosemirror-model": "^0.20.0",
+    "prosemirror-transform": "^0.20.0"
   },
   "devDependencies": {
     "buble": "^0.15.1",
     "mocha": "^3.0.2",
     "ist": "^1.0.0",
     "rimraf": "^2.5.4",
-    "prosemirror-test-builder": "^0.19.0"
+    "prosemirror-test-builder": "^0.20.0"
   },
   "scripts": {
     "test": "mocha test/test-*.js",
