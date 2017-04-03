@@ -23,6 +23,9 @@ document node is selected.
 @NodeSelection
 @AllSelection
 
+@SelectionRange
+@SelectionBookmark
+
 ### Plugin System
 
 To make distributing and using extra editor functionality easier,
