@@ -21,6 +21,7 @@ document node is selected.
 @Selection
 @TextSelection
 @NodeSelection
+@AllSelection
 
 ### Plugin System
 

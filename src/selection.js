@@ -411,6 +411,34 @@ class NodeBookmark {
   }
 }
 
+// ::- A selection type that represents selecting the whole document
+// (which can not necessarily be expressed with a text selection, when
+// there are for example leaf block nodes at the start or end of the
+// document).
+class AllSelection extends Selection {
+  constructor(doc) {
+    super(doc.resolve(0), doc.resolve(doc.content.size))
+  }
+
+  toJSON() { return {type: "all"} }
+
+  static fromJSON(doc) { return new AllSelection(doc) }
+
+  map(doc) { return new AllSelection(doc) }
+
+  eq(other) { return other instanceof AllSelection }
+
+  getBookmark() { return AllBookmark }
+}
+exports.AllSelection = AllSelection
+
+Selection.jsonID("all", AllSelection)
+
+const AllBookmark = {
+  map() { return this },
+  resolve(doc) { return new AllSelection(doc) }
+}
+
 // FIXME we'll need some awareness of text direction when scanning for selections
 
 // Try to find a selection inside the given node. `pos` points at the

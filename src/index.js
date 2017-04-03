@@ -1,7 +1,8 @@
 ;({Selection: exports.Selection,
    SelectionRange: exports.SelectionRange,
    TextSelection: exports.TextSelection,
-   NodeSelection: exports.NodeSelection} = require("./selection"))
+   NodeSelection: exports.NodeSelection,
+   AllSelection: exports.AllSelection} = require("./selection"))
 
 exports.Transaction = require("./transaction").Transaction
 
