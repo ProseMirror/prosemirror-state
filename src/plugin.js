@@ -48,6 +48,16 @@
 //   appends a transaction after this was called, it is called
 //   again with the new state and extended array of transactions.
 
+function bindProps(obj, self, target) {
+  for (let prop in obj) {
+    let val = obj[prop]
+    if (val instanceof Function) val = val.bind(self)
+    else if (prop == "handleDOMEvents") val = bindProps(val, self, {})
+    target[prop] = val
+  }
+  return target
+}
+
 // ::- Plugins wrap extra functionality that can be added to an
 // editor. They can define new [state fields](#state.StateField), and
 // add [view props](#view.EditorProps).
@@ -58,11 +68,7 @@ class Plugin {
     // :: EditorProps
     // The props exported by this plugin.
     this.props = {}
-    if (spec.props) for (let prop in spec.props) {
-      let val = spec.props[prop]
-      if (val instanceof Function) val = val.bind(this)
-      this.props[prop] = val
-    }
+    if (spec.props) bindProps(spec.props, this, this.props)
     // :: Object
     // The plugin's configuration object.
     this.spec = spec
