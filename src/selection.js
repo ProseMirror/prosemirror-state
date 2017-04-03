@@ -373,6 +373,8 @@ class NodeSelection extends Selection {
     return {type: "node", anchor: this.anchor}
   }
 
+  getBookmark() { return new NodeBookmark(this.anchor) }
+
   static fromJSON(doc, json) {
     return new NodeSelection(doc.resolve(json.anchor))
   }
