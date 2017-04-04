@@ -10,13 +10,13 @@ const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 // Transactions track changes to the document (they are a subclass of
 // [`Transform`](#transform.Transform)), but also other state changes,
 // like selection updates and adjustments of the set of [stored
-// marks](##state.EditorState.storedMarks). In addition, you can store
+// marks](#state.EditorState.storedMarks). In addition, you can store
 // metadata properties in a transaction, which are extra pieces of
 // information that client code or plugins can use to describe what a
 // transacion represents, so that they can update their [own
-// state](##state.StateField) accordingly.
+// state](#state.StateField) accordingly.
 //
-// The [editor view](##view.EditorView) uses a single metadata
+// The [editor view](#view.EditorView) uses a single metadata
 // property: it will attach a property `"pointer"` with the value
 // `true` to selection transactions directly caused by mouse or touch
 // input.

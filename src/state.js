@@ -107,10 +107,10 @@ class EditorState {
   }
 
   // :: (Transaction) → {state: EditorState, transactions: [Transaction]}
-  // Verbose variant of [`apply`](##state.EditorState.apply) that
+  // Verbose variant of [`apply`](#state.EditorState.apply) that
   // returns the precise transactions that were applied (which might
   // be influenced by the [transaction
-  // hooks](##state.PluginSpec.filterTransaction) of
+  // hooks](#state.PluginSpec.filterTransaction) of
   // plugins) along with the new state.
   applyTransaction(tr) {
     if (!this.filterTransaction(tr)) return {state: this, transactions: []}
