@@ -2,7 +2,8 @@ const {Slice, Fragment} = require("prosemirror-model")
 
 const classesById = Object.create(null)
 
-// ::- Superclass for editor selections.
+// ::- Superclass for editor selections. Should not be instantiated
+// directly, only extended.
 class Selection {
   // :: (ResolvedPos, ResolvedPos, ?[SelectionRange])
   // Initialize a selection with the head and anchor and ranges. If no
@@ -62,9 +63,7 @@ class Selection {
   }
 
   // eq:: (Selection) → bool
-  // Test whether the selection is the same as another selection. The
-  // default implementation tests whether they have the same class,
-  // head, and anchor.
+  // Test whether the selection is the same as another selection.
 
   // map:: (doc: Node, mapping: Mappable) → Selection
   // Map this selection through a [mappable](#transform.Mappable) thing. `doc`
