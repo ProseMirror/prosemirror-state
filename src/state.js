@@ -1,6 +1,6 @@
 const {Node} = require("prosemirror-model")
 
-const {Selection} = require("./selection")
+const {AllSelection, Selection} = require("./selection")
 const {Transaction} = require("./transaction")
 
 function bind(f, self) {
@@ -22,7 +22,7 @@ const baseFields = [
   }),
 
   new FieldDesc("selection", {
-    init(config, instance) { return config.selection || Selection.atStart(instance.doc) },
+    init(config, instance) { return config.selection || Selection.atStart(instance.doc) || new AllSelection(instance.doc) },
     apply(tr) { return tr.selection }
   }),
 
