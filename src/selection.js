@@ -144,25 +144,23 @@ class Selection {
   // position. Searches forward first by default, but if `bias` is
   // negative, it will search backwards first.
   static near($pos, bias = 1) {
-    let result = this.findFrom($pos, bias) || this.findFrom($pos, -bias)
-    if (!result) throw new RangeError("Searching for selection in invalid document " + $pos.node(0))
-    return result
+    return this.findFrom($pos, bias) || this.findFrom($pos, -bias) || new AllSelection($pos.node(0))
   }
 
-  // :: (Node, ?bool) → ?Selection
+  // :: (Node) → Selection
   // Find the cursor or leaf node selection closest to the start of
-  // the given document. When `textOnly` is true, only consider cursor
-  // selections.
-  static atStart(doc, textOnly) {
-    return findSelectionIn(doc, doc, 0, 0, 1, textOnly)
+  // the given document. Will return an `AllSelection` if no valid
+  // position exists.
+  static atStart(doc) {
+    return findSelectionIn(doc, doc, 0, 0, 1) || new AllSelection(doc)
   }
 
-  // :: (Node, ?bool) → ?Selection
-  // Find the cursor or leaf node selection closest to the end of
-  // the given document. When `textOnly` is true, only consider cursor
-  // selections.
-  static atEnd(doc, textOnly) {
-    return findSelectionIn(doc, doc, doc.content.size, doc.childCount, -1, textOnly)
+  // :: (Node) → Selection
+  // Find the cursor or leaf node selection closest to the end of the
+  // given document. Will return an `AllSelection` if no valid
+  // position exists.
+  static atEnd(doc) {
+    return findSelectionIn(doc, doc, doc.content.size, doc.childCount, -1) || new AllSelection(doc)
   }
 
   // :: (Node, Object) → Selection
@@ -298,9 +296,9 @@ class TextSelection extends Selection {
   // Return a text selection that spans the given positions or, if
   // they aren't text positions, find a text selection near them.
   // `bias` determines whether the method searches forward (default)
-  // or backwards (negative number) first. Will fall back to returning
-  // a node selection when the document doesn't contain a valid text
-  // position.
+  // or backwards (negative number) first. Will fall back to calling
+  // [`Selection.near`](#state.Selection^near) when the document
+  // doesn't contain a valid text position.
   static between($anchor, $head, bias) {
     let dPos = $anchor.pos - $head.pos
     if (!bias || dPos) bias = dPos >= 0 ? 1 : -1
