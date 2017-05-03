@@ -83,7 +83,7 @@ class Selection {
     // content. When that ended in an inline node, search backwards,
     // to get the position after that node. If not, search forward.
     let lastNode = content.content.lastChild, lastParent = null
-    for (let i = 0; i < content.openRight; i++) {
+    for (let i = 0; i < content.openEnd; i++) {
       lastParent = lastNode
       lastNode = lastNode.lastChild
     }
