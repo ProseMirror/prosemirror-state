@@ -120,7 +120,7 @@ class Transaction extends Transform {
   // inserted.
   replaceSelectionWith(node, inheritMarks) {
     let selection = this.selection
-    if (inheritMarks !== false)
+    if (inheritMarks)
       node = node.mark(this.storedMarks || selection.$from.marks(selection.to > selection.from))
     selection.replaceWith(this, node)
     return this
