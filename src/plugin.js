@@ -1,4 +1,5 @@
-// PluginSpec:: Object
+// PluginSpec:: interface
+//
 // A plugin spec provides a definition for a plugin.
 //
 //   props:: ?EditorProps
