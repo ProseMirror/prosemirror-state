@@ -11,7 +11,7 @@
 //   functions will be bound to have the plugin instance as their
 //   `this` binding.
 //
-//   state:: ?StateField
+//   state:: ?StateField<any>
 //   A [state field](#state.StateField) defined by this plugin.
 //
 //   key:: ?PluginKey
