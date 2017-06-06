@@ -56,6 +56,21 @@ class Configuration {
   }
 }
 
+// EditorStateConfig:: interface
+// Configuration options for [`EditorState`](#state.EditorState).
+//
+//   schema:: ?Schema
+//   The schema to use.
+//
+//   doc:: ?Node
+//   The document to edit.
+//
+//   selection:: ?Selection
+//   A valid selection in the document.
+//
+//   plugins:: ?[Plugin]
+//   The plugins that should be active in this state.
+
 // ::- The state of a ProseMirror editor is represented by an object
 // of this type. This is a persistent data structure—it isn't updated,
 // but rather a new state value is computed from an old one with the
@@ -161,14 +176,9 @@ class EditorState {
   // Start a [transaction](#state.Transaction) from this state.
   get tr() { return new Transaction(this) }
 
-  // :: (Object) → EditorState
-  // Create a state. `config` must be an object containing at least a
-  // `schema` (the schema to use) or `doc` (the starting document)
-  // property. When it has a `selection` property, that should be a
-  // valid [selection](#state.Selection) in the given document, to use
-  // as starting selection. Plugins, which are specified as an array
-  // in the `plugins` property, may read additional fields from the
-  // config object.
+  // :: (EditorStateConfig) → EditorState
+  // Create a state. The `config` argument must contain `schema` (the
+  // schema to use) or `doc` (the starting document).
   static create(config) {
     let $config = new Configuration(config.schema || config.doc.type.schema, config.plugins)
     let instance = new EditorState($config)
@@ -177,7 +187,7 @@ class EditorState {
     return instance
   }
 
-  // :: (Object) → EditorState
+  // :: (EditorStateConfig) → EditorState
   // Create a new state based on this one, but with an adjusted set of
   // active plugins. State fields that exist in both sets of plugins
   // are kept unchanged. Those that no longer exist are dropped, and
@@ -209,7 +219,7 @@ class EditorState {
     return result
   }
 
-  // :: (Object, Object, ?Object<Plugin>) → EditorState
+  // :: (EditorStateConfig, Object, ?Object<Plugin>) → EditorState
   // Deserialize a JSON representation of a state. `config` should
   // have at least a `schema` field, and should contain array of
   // plugins to initialize the state with. `pluginFields` can be used
