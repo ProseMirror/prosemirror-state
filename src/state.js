@@ -162,13 +162,21 @@ class EditorState {
   get tr() { return new Transaction(this) }
 
   // :: (Object) → EditorState
-  // Create a state. `config` must be an object containing at least a
-  // `schema` (the schema to use) or `doc` (the starting document)
-  // property. When it has a `selection` property, that should be a
-  // valid [selection](#state.Selection) in the given document, to use
-  // as starting selection. Plugins, which are specified as an array
-  // in the `plugins` property, may read additional fields from the
-  // config object.
+  // Create a state.
+  //
+  //   config::- Configuration options. Must contain `schema` or `doc` (or both).
+  //
+  //      schema:: ?Schema
+  //      The schema to use.
+  //   
+  //      doc:: ?Node
+  //      The starting document.
+  //
+  //      selection:: ?Selection
+  //      A valid selection in the document.
+  //
+  //      plugins:: ?[Plugin]
+  //      The plugins that should be active in this state.
   static create(config) {
     let $config = new Configuration(config.schema || config.doc.type.schema, config.plugins)
     let instance = new EditorState($config)
@@ -184,6 +192,14 @@ class EditorState {
   // those that are new are initialized using their
   // [`init`](#state.StateField.init) method, passing in the new
   // configuration object..
+  //
+  //   config::- configuration options
+  //
+  //     schema:: ?Schema
+  //     New schema to use.
+  //
+  //     plugins:: ?[Plugin]
+  //     New set of active plugins.
   reconfigure(config) {
     let $config = new Configuration(config.schema || this.schema, config.plugins)
     let fields = $config.fields, instance = new EditorState($config)
@@ -215,6 +231,14 @@ class EditorState {
   // plugins to initialize the state with. `pluginFields` can be used
   // to deserialize the state of plugins, by associating plugin
   // instances with the property names they use in the JSON object.
+  //
+  //   config::- configuration options
+  //
+  //     schema:: Schema
+  //     The schema to use.
+  //
+  //     plugins:: ?[Plugin]
+  //     The set of active plugins.
   static fromJSON(config, json, pluginFields) {
     if (!config.schema) throw new RangeError("Required config field 'schema' missing")
     let $config = new Configuration(config.schema, config.plugins)
