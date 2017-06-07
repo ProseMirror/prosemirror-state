@@ -3,13 +3,9 @@
 // A plugin spec provides a definition for a plugin.
 //
 //   props:: ?EditorProps
-//   The [view props](#view.EditorProps) added by this plugin.
-//   Note that the
-//   [`dispatchTransaction`](#view.EditorProps.dispatchTransaction)
-//   and [`state`](#view.EditorProps.state) props can't be defined
-//   by plugins, only by the main props object. Props that are
-//   functions will be bound to have the plugin instance as their
-//   `this` binding.
+//   The [view props](#view.EditorProps) added by this plugin. Props
+//   that are functions will be bound to have the plugin instance as
+//   their `this` binding.
 //
 //   state:: ?StateField<any>
 //   A [state field](#state.StateField) defined by this plugin.
