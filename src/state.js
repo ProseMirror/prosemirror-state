@@ -219,12 +219,20 @@ class EditorState {
     return result
   }
 
-  // :: (EditorStateConfig, Object, ?Object<Plugin>) → EditorState
+  // :: (Object, Object, ?Object<Plugin>) → EditorState
   // Deserialize a JSON representation of a state. `config` should
   // have at least a `schema` field, and should contain array of
   // plugins to initialize the state with. `pluginFields` can be used
   // to deserialize the state of plugins, by associating plugin
   // instances with the property names they use in the JSON object.
+  //
+  //   config::- configuration options
+  //
+  //     schema:: Schema
+  //     The schema to use.
+  //
+  //     plugins:: ?[Plugin]
+  //     The set of active plugins.
   static fromJSON(config, json, pluginFields) {
     if (!config.schema) throw new RangeError("Required config field 'schema' missing")
     let $config = new Configuration(config.schema, config.plugins)
