@@ -56,21 +56,6 @@ class Configuration {
   }
 }
 
-// EditorStateConfig:: interface
-// Configuration options for [`EditorState`](#state.EditorState).
-//
-//   schema:: ?Schema
-//   The schema to use.
-//
-//   doc:: ?Node
-//   The document to edit.
-//
-//   selection:: ?Selection
-//   A valid selection in the document.
-//
-//   plugins:: ?[Plugin]
-//   The plugins that should be active in this state.
-
 // ::- The state of a ProseMirror editor is represented by an object
 // of this type. This is a persistent data structure—it isn't updated,
 // but rather a new state value is computed from an old one with the
@@ -176,9 +161,22 @@ class EditorState {
   // Start a [transaction](#state.Transaction) from this state.
   get tr() { return new Transaction(this) }
 
-  // :: (EditorStateConfig) → EditorState
-  // Create a state. The `config` argument must contain `schema` (the
-  // schema to use) or `doc` (the starting document).
+  // :: (Object) → EditorState
+  // Create a state.
+  //
+  //   config::- Configuration options. Must contain `schema` or `doc` (or both).
+  //
+  //      schema:: ?Schema
+  //      The schema to use.
+  //   
+  //      doc:: ?Node
+  //      The starting document.
+  //
+  //      selection:: ?Selection
+  //      A valid selection in the document.
+  //
+  //      plugins:: ?[Plugin]
+  //      The plugins that should be active in this state.
   static create(config) {
     let $config = new Configuration(config.schema || config.doc.type.schema, config.plugins)
     let instance = new EditorState($config)
