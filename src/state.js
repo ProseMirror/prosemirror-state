@@ -187,13 +187,21 @@ class EditorState {
     return instance
   }
 
-  // :: (EditorStateConfig) → EditorState
+  // :: (Object) → EditorState
   // Create a new state based on this one, but with an adjusted set of
   // active plugins. State fields that exist in both sets of plugins
   // are kept unchanged. Those that no longer exist are dropped, and
   // those that are new are initialized using their
   // [`init`](#state.StateField.init) method, passing in the new
   // configuration object..
+  //
+  //   config::- configuration options
+  //
+  //     schema:: ?Schema
+  //     New schema to use.
+  //
+  //     plugins:: ?[Plugin]
+  //     New set of active plugins.
   reconfigure(config) {
     let $config = new Configuration(config.schema || this.schema, config.plugins)
     let fields = $config.fields, instance = new EditorState($config)
