@@ -168,7 +168,7 @@ class EditorState {
   //
   //      schema:: ?Schema
   //      The schema to use.
-  //   
+  //
   //      doc:: ?Node
   //      The starting document.
   //
