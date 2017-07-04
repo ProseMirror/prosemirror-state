@@ -34,11 +34,11 @@ class Selection {
   get head() { return this.$head.pos }
 
   // :: number
-  // The lower bound of the selection's first range.
+  // The lower bound of the selection's main range.
   get from() { return this.$from.pos }
 
   // :: number
-  // The upper bound of the selection's first range.
+  // The upper bound of the selection's main range.
   get to() { return this.$to.pos }
 
   // :: ResolvedPos
