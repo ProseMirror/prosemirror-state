@@ -376,7 +376,7 @@ class NodeSelection extends Selection {
     return new NodeSelection(doc.resolve(json.anchor))
   }
 
-  // :: (Node, number, ?number) → NodeSelection
+  // :: (Node, number) → NodeSelection
   // Create a node selection from non-resolved positions.
   static create(doc, from) {
     return new this(doc.resolve(from))
