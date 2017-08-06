@@ -1,7 +1,7 @@
-const {Node} = require("prosemirror-model")
+import {Node} from "prosemirror-model"
 
-const {Selection} = require("./selection")
-const {Transaction} = require("./transaction")
+import {Selection} from "./selection"
+import {Transaction} from "./transaction"
 
 function bind(f, self) {
   return !self || !f ? f : f.bind(self)
@@ -63,7 +63,7 @@ class Configuration {
 //
 // In addition to the built-in state fields, plugins can define
 // additional pieces of state.
-class EditorState {
+export class EditorState {
   constructor(config) {
     this.config = config
   }
@@ -274,6 +274,5 @@ class EditorState {
     if (found > -1) applyListeners.splice(found, 1)
   }
 }
-exports.EditorState = EditorState
 
 const applyListeners = []

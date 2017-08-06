@@ -1,11 +1,7 @@
-;({Selection: exports.Selection,
-   SelectionRange: exports.SelectionRange,
-   TextSelection: exports.TextSelection,
-   NodeSelection: exports.NodeSelection,
-   AllSelection: exports.AllSelection} = require("./selection"))
+export {Selection, SelectionRange, TextSelection, NodeSelection, AllSelection} from "./selection"
 
-exports.Transaction = require("./transaction").Transaction
+export {Transaction} from "./transaction"
 
-exports.EditorState = require("./state").EditorState
+export {EditorState} from "./state"
 
-;({Plugin: exports.Plugin, PluginKey: exports.PluginKey} = require("./plugin"))
+export {Plugin, PluginKey} from "./plugin"

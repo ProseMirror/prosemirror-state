@@ -1,5 +1,5 @@
-const {Transform} = require("prosemirror-transform")
-const {Mark} = require("prosemirror-model")
+import {Transform} from "prosemirror-transform"
+import {Mark} from "prosemirror-model"
 
 const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 
@@ -20,7 +20,7 @@ const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 // property: it will attach a property `"pointer"` with the value
 // `true` to selection transactions directly caused by mouse or touch
 // input.
-class Transaction extends Transform {
+export class Transaction extends Transform {
   constructor(state) {
     super(state.doc)
     // :: number
@@ -194,4 +194,3 @@ class Transaction extends Transform {
     return this.ensureMarks(mark.removeFromSet(this.storedMarks || this.selection.$head.marks()))
   }
 }
-exports.Transaction = Transaction

@@ -1,10 +1,10 @@
-const {Slice, Fragment} = require("prosemirror-model")
+import {Slice, Fragment} from "prosemirror-model"
 
 const classesById = Object.create(null)
 
 // ::- Superclass for editor selections. Should not be instantiated
 // directly, only extended.
-class Selection {
+export class Selection {
   // :: (ResolvedPos, ResolvedPos, ?[SelectionRange])
   // Initialize a selection with the head and anchor and ranges. If no
   // ranges are given, constructs a single range across `$anchor` and
@@ -202,7 +202,6 @@ class Selection {
     return TextSelection.between(this.anchor, this.head).getBookmark()
   }
 }
-exports.Selection = Selection
 
 // :: bool
 // Controls whether, when a selection of this type is active in the
@@ -225,7 +224,7 @@ Selection.prototype.visible = true
 //   mapping made the bookmark invalid.
 
 // ::- Represents a selected range in a document.
-class SelectionRange {
+export class SelectionRange {
   // :: (ResolvedPos, ResolvedPos)
   constructor($from, $to) {
     // :: ResolvedPos
@@ -236,13 +235,12 @@ class SelectionRange {
     this.$to = $to
   }
 }
-exports.SelectionRange = SelectionRange
 
 // ::- A text selection represents a classical editor selection, with
 // a head (the moving side) and anchor (immobile side), both of which
 // point into textblock nodes. It can be empty (a regular cursor
 // position).
-class TextSelection extends Selection {
+export class TextSelection extends Selection {
   // :: (ResolvedPos, ?ResolvedPos)
   // Construct a text selection between the given points.
   constructor($anchor, $head = $anchor) {
@@ -318,7 +316,6 @@ class TextSelection extends Selection {
     return new TextSelection($anchor, $head)
   }
 }
-exports.TextSelection = TextSelection
 
 Selection.jsonID("text", TextSelection)
 
@@ -339,7 +336,7 @@ class TextBookmark {
 // single node. All nodes marked [selectable](#model.NodeSpec.selectable)
 // can be the target of a node selection. In such an object, `from`
 // and `to` point directly before and after the selected node.
-class NodeSelection extends Selection {
+export class NodeSelection extends Selection {
   // :: (ResolvedPos)
   // Create a node selection. Does not verify the validity of its
   // argument.
@@ -389,7 +386,6 @@ class NodeSelection extends Selection {
     return !node.isText && node.type.spec.selectable !== false
   }
 }
-exports.NodeSelection = NodeSelection
 
 NodeSelection.prototype.visible = false
 
@@ -414,7 +410,7 @@ class NodeBookmark {
 // (which can not necessarily be expressed with a text selection, when
 // there are for example leaf block nodes at the start or end of the
 // document).
-class AllSelection extends Selection {
+export class AllSelection extends Selection {
   // :: (Node)
   // Create an all-selection over the given document.
   constructor(doc) {
@@ -431,7 +427,6 @@ class AllSelection extends Selection {
 
   getBookmark() { return AllBookmark }
 }
-exports.AllSelection = AllSelection
 
 Selection.jsonID("all", AllSelection)
 

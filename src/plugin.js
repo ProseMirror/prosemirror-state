@@ -58,7 +58,7 @@ function bindProps(obj, self, target) {
 // ::- Plugins wrap extra functionality that can be added to an
 // editor. They can define new [state fields](#state.StateField), and
 // add [view props](#view.EditorProps).
-class Plugin {
+export class Plugin {
   // :: (PluginSpec)
   // Create a plugin.
   constructor(spec) {
@@ -76,7 +76,6 @@ class Plugin {
   // Get the state field for this plugin.
   getState(state) { return state[this.key] }
 }
-exports.Plugin = Plugin
 
 // StateField:: interface<T>
 // A plugin may provide a state field (under its `state` property) of
@@ -116,7 +115,7 @@ function createKey(name) {
 // plugins in a way that makes it possible to find them, given an
 // editor state. Assigning a key does mean only one plugin of that
 // type can be active in a state.
-class PluginKey {
+export class PluginKey {
   // :: (?string)
   // Create a plugin key.
   constructor(name = "key") { this.key = createKey(name) }
@@ -130,4 +129,3 @@ class PluginKey {
   // Get the plugin's state from an editor state.
   getState(state) { return state[this.key] }
 }
-exports.PluginKey = PluginKey
