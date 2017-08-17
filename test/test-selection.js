@@ -78,6 +78,24 @@ describe("Selection", () => {
     ist(state.state.storedMarks.length, 1)
   })
 
+  it("doesn't preserve marks when deleting a selection at the end of a block", () => {
+    let state = new TestState({doc: doc(p("foo", em("bar<a>")), p("b<b>az"))})
+    state.deleteSelection()
+    ist(!state.state.storedMarks)
+  })
+
+  it("drops non-inclusive marks at the end of a deleted span when appropriate", () => {
+    let state = new TestState({doc: doc(p("foo", a("ba", em("<a>r<b>")), "baz"))})
+    state.deleteSelection()
+    ist(state.state.storedMarks.map(x => x.type.name).join(), "em")
+  })
+
+  it("keeps non-inclusive marks when still inside them", () => {
+    let state = new TestState({doc: doc(p("foo", a("b", em("<a>a<b>"), "r"), "baz"))})
+    state.deleteSelection()
+    ist(state.state.storedMarks.length, 2)
+  })
+
   it("allows deleting a leaf", () => {
     let state = new TestState({doc: doc(p("a"), hr, hr, p("b")), schema})
     state.nodeSel(3)

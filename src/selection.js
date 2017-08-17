@@ -262,8 +262,8 @@ export class TextSelection extends Selection {
   replace(tr, content = Slice.empty) {
     super.replace(tr, content)
     if (content == Slice.empty) {
-      if (this.$from.parentOffset < this.$from.parent.content.size)
-        tr.ensureMarks(this.$from.marks(true))
+      let marks = this.$from.marksAcross(this.$to)
+      if (marks) tr.ensureMarks(marks)
     }
   }
 
