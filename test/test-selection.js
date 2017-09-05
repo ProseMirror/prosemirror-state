@@ -151,6 +151,13 @@ describe("Selection", () => {
     ist(state.doc, doc(p("abc"), pre(), hr, p()), eq)
     ist(state.selection.from, 9)
   })
+
+  it("puts the cursor after the inserted text when inserting a list item", () => {
+    let state = new TestState({doc: doc(p("<a>abc"))})
+    let source = doc(ul(li(p("<a>def<b>"))))
+    state.apply(state.tr.replaceSelection(source.slice(source.tag.a, source.tag.b, true)))
+    ist(state.selection.from, 6)
+  })
 })
 
 describe("TextSelection.between", () => {
