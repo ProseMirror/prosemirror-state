@@ -13,10 +13,12 @@ state) by applying [transactions](#state.Transaction) to it.
 
 ### Selection
 
-A ProseMirror selection can be either a classical
-[text selection](#state.TextSelection) (of which cursors are a special
-case), or a [_node_ selection](#state.NodeSelection), where a specific
-document node is selected.
+A ProseMirror selection can be one of several types. This module
+defines types for classical [text selections](#state.TextSelection)
+(of which cursors are a special case) and [_node_
+selections](#state.NodeSelection), where a specific document node is
+selected. It is possible to extend the editor with custom selection
+types.
 
 @Selection
 @TextSelection
@@ -28,10 +30,10 @@ document node is selected.
 
 ### Plugin System
 
-To make distributing and using extra editor functionality easier,
+To make it easy to package and enable extra editor functionality,
 ProseMirror has a plugin system.
 
 @PluginSpec
-@Plugin
 @StateField
+@Plugin
 @PluginKey

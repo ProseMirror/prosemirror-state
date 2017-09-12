@@ -16,21 +16,22 @@ const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 // transacion represents, so that they can update their [own
 // state](#state.StateField) accordingly.
 //
-// The [editor view](#view.EditorView) uses a single metadata
-// property: it will attach a property `"pointer"` with the value
-// `true` to selection transactions directly caused by mouse or touch
-// input.
+// The [editor view](#view.EditorView) uses a few metadata properties:
+// it will attach a property `"pointer"` with the value `true` to
+// selection transactions directly caused by mouse or touch input, and
+// a `"paste"` property of true to transactions caused by a paste..
 export class Transaction extends Transform {
   constructor(state) {
     super(state.doc)
     // :: number
-    // The timestamp associated with this transaction.
+    // The timestamp associated with this transaction, in the same
+    // format as `Date.now()`.
     this.time = Date.now()
     this.curSelection = state.selection
     // The step count for which the current selection is valid.
     this.curSelectionFor = 0
     // :: ?[Mark]
-    // The stored marks in this transaction.
+    // The stored marks set by this transaction, if any.
     this.storedMarks = state.storedMarks
     // Bitfield to track which aspects of the state were updated by
     // this transaction.
@@ -40,9 +41,9 @@ export class Transaction extends Transform {
   }
 
   // :: Selection
-  // The transform's current selection. This defaults to the
-  // editor selection [mapped](#state.Selection.map) through the steps in
-  // this transform, but can be overwritten with
+  // The transaction's current selection. This defaults to the editor
+  // selection [mapped](#state.Selection.map) through the steps in the
+  // transaction, but can be overwritten with
   // [`setSelection`](#state.Transaction.setSelection).
   get selection() {
     if (this.curSelectionFor < this.steps.length) {
@@ -53,9 +54,8 @@ export class Transaction extends Transform {
   }
 
   // :: (Selection) → Transaction
-  // Update the transaction's current selection. This will determine
-  // the selection that the editor gets when the transaction is
-  // applied.
+  // Update the transaction's current selection. Will determine the
+  // selection that the editor gets when the transaction is applied.
   setSelection(selection) {
     this.curSelection = selection
     this.curSelectionFor = this.steps.length
@@ -88,6 +88,18 @@ export class Transaction extends Transform {
     return this
   }
 
+  // :: (Mark) → Transaction
+  // Add a mark to the set of stored marks.
+  addStoredMark(mark) {
+    return this.ensureMarks(mark.addToSet(this.storedMarks || this.selection.$head.marks()))
+  }
+
+  // :: (union<Mark, MarkType>) → Transaction
+  // Remove a mark or mark type from the set of stored marks.
+  removeStoredMark(mark) {
+    return this.ensureMarks(mark.removeFromSet(this.storedMarks || this.selection.$head.marks()))
+  }
+
   // :: bool
   // Whether the stored marks were explicitly set for this transaction.
   get storedMarksSet() {
@@ -108,16 +120,16 @@ export class Transaction extends Transform {
   }
 
   // :: (Slice) → Transaction
+  // Replace the current selection with the given slice.
   replaceSelection(slice) {
     this.selection.replace(this, slice)
     return this
   }
 
   // :: (Node, ?bool) → Transaction
-  // Replace the selection with the given node or slice, or delete it
-  // if `content` is null. When `inheritMarks` is true and the content
-  // is inline, it inherits the marks from the place where it is
-  // inserted.
+  // Replace the selection with the given node. When `inheritMarks` is
+  // true and the content is inline, it inherits the marks from the
+  // place where it is inserted.
   replaceSelectionWith(node, inheritMarks) {
     let selection = this.selection
     if (inheritMarks !== false)
@@ -164,7 +176,7 @@ export class Transaction extends Transform {
 
   // :: bool
   // Returns true if this transaction doesn't contain any metadata,
-  // and can thus be safely extended.
+  // and can thus safely be extended.
   get isGeneric() {
     for (let _ in this.meta) return false
     return true
@@ -180,17 +192,5 @@ export class Transaction extends Transform {
 
   get scrolledIntoView() {
     return (this.updated & UPDATED_SCROLL) > 0
-  }
-
-  // :: (Mark) → Transaction
-  // Add a mark to the set of stored marks.
-  addStoredMark(mark) {
-    return this.ensureMarks(mark.addToSet(this.storedMarks || this.selection.$head.marks()))
-  }
-
-  // :: (union<Mark, MarkType>) → Transaction
-  // Remove a mark or mark type from the set of stored marks.
-  removeStoredMark(mark) {
-    return this.ensureMarks(mark.removeFromSet(this.storedMarks || this.selection.$head.marks()))
   }
 }

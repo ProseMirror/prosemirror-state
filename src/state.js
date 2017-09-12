@@ -57,12 +57,12 @@ class Configuration {
 }
 
 // ::- The state of a ProseMirror editor is represented by an object
-// of this type. This is a persistent data structure—it isn't updated,
-// but rather a new state value is computed from an old one with the
-// [`apply`](#state.EditorState.apply) method.
+// of this type. A state is a persistent data structure—it isn't
+// updated, but rather a new state value is computed from an old one
+// using the [`apply`](#state.EditorState.apply) method.
 //
-// In addition to the built-in state fields, plugins can define
-// additional pieces of state.
+// A state holds a number of built-in fields, and plugins can
+// [define](#state.PluginSpec.state) additional fields.
 export class EditorState {
   constructor(config) {
     this.config = config
@@ -75,8 +75,8 @@ export class EditorState {
   // The selection.
 
   // storedMarks:: ?[Mark]
-  // A set of marks to apply to the next character that's typed. Will
-  // be null whenever no explicit marks have been set.
+  // A set of marks to apply to the next input. Will be null when
+  // no explicit marks have been set.
 
   // :: Schema
   // The schema of the state's document.
@@ -162,7 +162,7 @@ export class EditorState {
   get tr() { return new Transaction(this) }
 
   // :: (Object) → EditorState
-  // Create a state.
+  // Create a new state.
   //
   //   config::- Configuration options. Must contain `schema` or `doc` (or both).
   //

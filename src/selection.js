@@ -3,8 +3,8 @@ import {ReplaceStep} from "prosemirror-transform"
 
 const classesById = Object.create(null)
 
-// ::- Superclass for editor selections. Should not be instantiated
-// directly, only extended.
+// ::- Superclass for editor selections. Every selection type should
+// extend this. Should not be instantiated directly.
 export class Selection {
   // :: (ResolvedPos, ResolvedPos, ?[SelectionRange])
   // Initialize a selection with the head and anchor and ranges. If no
@@ -25,13 +25,11 @@ export class Selection {
   }
 
   // :: number
-  // The selection's immobile side (does not move when
-  // shift-selecting).
+  // The selection's anchor, as an unresolved position.
   get anchor() { return this.$anchor.pos }
 
   // :: number
-  // The selection's mobile side (the side that moves when
-  // shift-selecting).
+  // The selection's head.
   get head() { return this.$head.pos }
 
   // :: number
@@ -68,7 +66,7 @@ export class Selection {
 
   // map:: (doc: Node, mapping: Mappable) → Selection
   // Map this selection through a [mappable](#transform.Mappable) thing. `doc`
-  // should be the new document, to which we are mapping.
+  // should be the new document to which we are mapping.
 
   // :: Slice
   // Get the content of this selection as a slice.
@@ -119,14 +117,14 @@ export class Selection {
   // Convert the selection to a JSON representation. When implementing
   // this for a custom selection class, make sure to give the object a
   // `type` property whose value matches the ID under which you
-  // [registered](#state.Selection^jsonID) your class. The default
-  // implementation adds `type`, `head`, and `anchor` properties.
+  // [registered](#state.Selection^jsonID) your class.
 
   // :: (ResolvedPos, number, ?bool) → ?Selection
   // Find a valid cursor or leaf node selection starting at the given
   // position and searching back if `dir` is negative, and forward if
-  // negative. When `textOnly` is true, only consider cursor
-  // selections.
+  // positive. When `textOnly` is true, only consider cursor
+  // selections. Will return null when no valid selection position is
+  // found.
   static findFrom($pos, dir, textOnly) {
     let inner = $pos.parent.inlineContent ? new TextSelection($pos)
         : findSelectionIn($pos.node(0), $pos.parent, $pos.pos, $pos.index(), dir, textOnly)
@@ -150,22 +148,22 @@ export class Selection {
 
   // :: (Node) → Selection
   // Find the cursor or leaf node selection closest to the start of
-  // the given document. Will return an `AllSelection` if no valid
-  // position exists.
+  // the given document. Will return an
+  // [`AllSelection`](#state.AllSelection) if no valid position
+  // exists.
   static atStart(doc) {
     return findSelectionIn(doc, doc, 0, 0, 1) || new AllSelection(doc)
   }
 
   // :: (Node) → Selection
   // Find the cursor or leaf node selection closest to the end of the
-  // given document. Will return an `AllSelection` if no valid
-  // position exists.
+  // given document.
   static atEnd(doc) {
     return findSelectionIn(doc, doc, doc.content.size, doc.childCount, -1) || new AllSelection(doc)
   }
 
   // :: (Node, Object) → Selection
-  // Deserialize a JSON representation of a selection. Must be
+  // Deserialize the JSON representation of a selection. Must be
   // implemented for custom classes (as a static class method).
   static fromJSON(doc, json) {
     let cls = classesById[json.type]
@@ -221,7 +219,7 @@ Selection.prototype.visible = true
 //   resolve:: (doc: Node) → Selection
 //   Resolve the bookmark to a real selection again. This may need to
 //   do some error checking and may fall back to a default (usually
-//   [`TextSelection.between`](#state.TextSelection.between) if
+//   [`TextSelection.between`](#state.TextSelection.between)) if
 //   mapping made the bookmark invalid.
 
 // ::- Represents a selected range in a document.
@@ -333,10 +331,11 @@ class TextBookmark {
   }
 }
 
-// ::- A node selection is a selection that points at a
-// single node. All nodes marked [selectable](#model.NodeSpec.selectable)
-// can be the target of a node selection. In such an object, `from`
-// and `to` point directly before and after the selected node.
+// ::- A node selection is a selection that points at a single node.
+// All nodes marked [selectable](#model.NodeSpec.selectable) can be
+// the target of a node selection. In such a selection, `from` and
+// `to` point directly before and after the selected node, `anchor`
+// equals `from`, and `head` equals `to`..
 export class NodeSelection extends Selection {
   // :: (ResolvedPos)
   // Create a node selection. Does not verify the validity of its

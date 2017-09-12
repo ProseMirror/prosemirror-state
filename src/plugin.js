@@ -1,6 +1,7 @@
 // PluginSpec:: interface
 //
-// A plugin spec provides a definition for a plugin.
+// This is the type passed to the [`Plugin`](#state.Plugin)
+// constructor. It provides a definition for a plugin.
 //
 //   props:: ?EditorProps
 //   The [view props](#view.EditorProps) added by this plugin. Props
@@ -8,14 +9,14 @@
 //   their `this` binding.
 //
 //   state:: ?StateField<any>
-//   A [state field](#state.StateField) defined by this plugin.
+//   Allows a plugin to define a [state field](#state.StateField), an
+//   extra slot in the state object in which it can keep its own data.
 //
 //   key:: ?PluginKey
-//   Can optionally be used to make this a keyed plugin. You can
-//   have only one plugin with a given key in a given state, but
-//   it is possible to access the plugin's configuration and state
-//   through the key, without having access to the plugin instance
-//   itself.
+//   Can be used to make this a keyed plugin. You can have only one
+//   plugin with a given key in a given state, but it is possible to
+//   access the plugin's configuration and state through the key,
+//   without having access to the plugin instance object.
 //
 //   view:: ?(EditorView) → Object
 //   When the plugin needs to interact with the editor view, or
@@ -42,8 +43,10 @@
 //   appendTransaction:: ?(transactions: [Transaction], oldState: EditorState, newState: EditorState) → ?Transaction
 //   Allows the plugin to append another transaction to be applied
 //   after the given array of transactions. When another plugin
-//   appends a transaction after this was called, it is called
-//   again with the new state and extended array of transactions.
+//   appends a transaction after this was called, it is called again
+//   with the new state and new transactions—but only the new
+//   transactions, i.e. it won't be passed transactions that it
+//   already saw.
 
 function bindProps(obj, self, target) {
   for (let prop in obj) {
@@ -55,45 +58,45 @@ function bindProps(obj, self, target) {
   return target
 }
 
-// ::- Plugins wrap extra functionality that can be added to an
-// editor. They can define new [state fields](#state.StateField), and
-// add [view props](#view.EditorProps).
+// ::- Plugins bundle functionality that can be added to an editor.
+// They are part of the [editor state](#state.EditorState) and
+// may influence that state and the view that contains it.
 export class Plugin {
   // :: (PluginSpec)
   // Create a plugin.
   constructor(spec) {
     // :: EditorProps
-    // The props exported by this plugin.
+    // The [props](#view.EditorProps) exported by this plugin.
     this.props = {}
     if (spec.props) bindProps(spec.props, this, this.props)
     // :: Object
-    // The plugin's configuration object.
+    // The plugin's [spec object](#state.PluginSpec).
     this.spec = spec
     this.key = spec.key ? spec.key.key : createKey("plugin")
   }
 
   // :: (EditorState) → any
-  // Get the state field for this plugin.
+  // Extract the plugin's state field from an editor state.
   getState(state) { return state[this.key] }
 }
 
 // StateField:: interface<T>
-// A plugin may provide a state field (under its `state` property) of
-// this type, which describes the state it wants to keep. Functions
-// provided here are always called with the plugin instance as their
-// `this` binding.
+// A plugin spec may provide a state field (under its
+// [`state`](#state.PluginSpec.state) property) of this type, which
+// describes the state it wants to keep. Functions provided here are
+// always called with the plugin instance as their `this` binding.
 //
 //   init:: (config: Object, instance: EditorState) → T
-//   Initialize the value of this field. `config` will be the object
+//   Initialize the value of the field. `config` will be the object
 //   passed to [`EditorState.create`](#state.EditorState^create). Note
 //   that `instance` is a half-initialized state instance, and will
-//   not have values for any fields initialized after this one.
+//   not have values for plugin fields initialized after this one.
 //
 //   apply:: (tr: Transaction, value: T, oldState: EditorState, newState: EditorState) → T
 //   Apply the given transaction to this state field, producing a new
-//   field value. Note that the `newState` argument is a partially
+//   field value. Note that the `newState` argument is again a partially
 //   constructed state does not yet contain the state from plugins
-//   coming after this plugin.
+//   coming after this one.
 //
 //   toJSON:: ?(value: T) → *
 //   Convert this field to JSON. Optional, can be left off to disable
