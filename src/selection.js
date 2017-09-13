@@ -219,7 +219,7 @@ Selection.prototype.visible = true
 //   resolve:: (doc: Node) → Selection
 //   Resolve the bookmark to a real selection again. This may need to
 //   do some error checking and may fall back to a default (usually
-//   [`TextSelection.between`](#state.TextSelection.between)) if
+//   [`TextSelection.between`](#state.TextSelection^between)) if
 //   mapping made the bookmark invalid.
 
 // ::- Represents a selected range in a document.
