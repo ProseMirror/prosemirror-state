@@ -68,7 +68,7 @@ export class Selection {
   // Map this selection through a [mappable](#transform.Mappable) thing. `doc`
   // should be the new document to which we are mapping.
 
-  // :: Slice
+  // :: () → Slice
   // Get the content of this selection as a slice.
   content() {
     return this.$from.node(0).slice(this.from, this.to, true)
