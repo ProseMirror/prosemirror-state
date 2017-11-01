@@ -133,7 +133,7 @@ export class Transaction extends Transform {
   replaceSelectionWith(node, inheritMarks) {
     let selection = this.selection
     if (inheritMarks !== false)
-      node = node.mark(this.storedMarks || selection.$from.marks(selection.to > selection.from))
+      node = node.mark(this.storedMarks || (selection.empty ? selection.$from.marks() : selection.$from.marksAcross(selection.$to)))
     selection.replaceWith(this, node)
     return this
   }
@@ -155,8 +155,12 @@ export class Transaction extends Transform {
       return this.replaceSelectionWith(schema.text(text), true)
     } else {
       if (!text) return this.deleteRange(from, to)
-      let node = schema.text(text, this.storedMarks || this.doc.resolve(from).marks(to > from))
-      return this.replaceRangeWith(from, to, node)
+      let marks = this.storedMarks
+      if (!marks) {
+        let $from = this.doc.resolve(from)
+        marks = to == from ? $from.marks() : $from.marksAcross(this.doc.resolve(to))
+      }
+      return this.replaceRangeWith(from, to, schema.text(text, marks))
     }
   }
 

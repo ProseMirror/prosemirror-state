@@ -96,6 +96,14 @@ describe("Selection", () => {
     ist(state.state.storedMarks.length, 2)
   })
 
+  it("preserves marks when typing over marked text", () => {
+    let state = new TestState({doc: doc(p("foo ", em("<a>bar<b>"), " baz"))})
+    state.apply(state.tr.insertText("quux"))
+    ist(state.doc, doc(p("foo ", em("quux"), " baz")), eq)
+    state.apply(state.tr.insertText("bar", 5, 9))
+    ist(state.doc, doc(p("foo ", em("bar"), " baz")), eq)
+  })
+
   it("allows deleting a leaf", () => {
     let state = new TestState({doc: doc(p("a"), hr, hr, p("b")), schema})
     state.nodeSel(3)
