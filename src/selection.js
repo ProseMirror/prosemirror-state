@@ -1,5 +1,5 @@
 import {Slice, Fragment} from "prosemirror-model"
-import {ReplaceStep} from "prosemirror-transform"
+import {ReplaceStep, ReplaceAroundStep} from "prosemirror-transform"
 
 const classesById = Object.create(null)
 
@@ -456,8 +456,10 @@ function findSelectionIn(doc, node, pos, index, dir, text) {
 
 function selectionToInsertionEnd(tr, startLen, bias) {
   let last = tr.steps.length - 1
-  if (last < startLen || !(tr.steps[last] instanceof ReplaceStep)) return
+  if (last < startLen) return
+  let step = tr.steps[last]
+  if (!(step instanceof ReplaceStep || step instanceof ReplaceAroundStep)) return
   let map = tr.mapping.maps[last], end
-  map.forEach((_from, _to, _newFrom, newTo) => end = newTo)
-  if (end != null) tr.setSelection(Selection.near(tr.doc.resolve(end), bias))
+  map.forEach((_from, _to, _newFrom, newTo) => { if (end == null) end = newTo })
+  tr.setSelection(Selection.near(tr.doc.resolve(end), bias))
 }
