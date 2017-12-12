@@ -133,7 +133,7 @@ export class Transaction extends Transform {
   replaceSelectionWith(node, inheritMarks) {
     let selection = this.selection
     if (inheritMarks !== false)
-      node = node.mark(this.storedMarks || (selection.empty ? selection.$from.marks() : selection.$from.marksAcross(selection.$to)))
+      node = node.mark(this.storedMarks || (selection.empty ? selection.$from.marks() : (selection.$from.marksAcross(selection.$to) || Mark.none)))
     selection.replaceWith(this, node)
     return this
   }
