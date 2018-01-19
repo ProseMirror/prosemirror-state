@@ -210,13 +210,13 @@ export class EditorState {
     return instance
   }
 
-  // :: (?Object<Plugin>) → Object
+  // :: (?union<Object<Plugin>, string>) → Object
   // Serialize this state to JSON. If you want to serialize the state
   // of plugins, pass an object mapping property names to use in the
   // resulting JSON object to plugin objects.
   toJSON(pluginFields) {
     let result = {doc: this.doc.toJSON(), selection: this.selection.toJSON()}
-    if (pluginFields) for (let prop in pluginFields) {
+    if (pluginFields && typeof pluginFields == 'object') for (let prop in pluginFields) {
       if (prop == "doc" || prop == "selection")
         throw new RangeError("The JSON fields `doc` and `selection` are reserved")
       let plugin = pluginFields[prop], state = plugin.spec.state

@@ -101,6 +101,11 @@ describe("State", () => {
     ist(applied.state.doc, doc(p("XA")), eq)
     ist(applied.transactions.length, 2)
   })
+
+  it("supports JSON.stringify toJSON arguments", () => {
+    let someObject = { someKey: EditorState.create({schema}) }
+    ist(JSON.stringify(someObject).length > 0)
+  })
 })
 
 describe("Plugin", () => {
