@@ -210,10 +210,12 @@ export class EditorState {
     return instance
   }
 
-  // :: (?union<Object<Plugin>, string>) → Object
+  // :: (?union<Object<Plugin>, string, number>) → Object
   // Serialize this state to JSON. If you want to serialize the state
   // of plugins, pass an object mapping property names to use in the
-  // resulting JSON object to plugin objects.
+  // resulting JSON object to plugin objects. The argument may also be
+  // a string or number, in which case it is ignored, to support the
+  // way `JSON.stringify` calls `toString` methods.
   toJSON(pluginFields) {
     let result = {doc: this.doc.toJSON(), selection: this.selection.toJSON()}
     if (pluginFields && typeof pluginFields == 'object') for (let prop in pluginFields) {
