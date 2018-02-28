@@ -19,7 +19,7 @@ const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 // The [editor view](#view.EditorView) uses a few metadata properties:
 // it will attach a property `"pointer"` with the value `true` to
 // selection transactions directly caused by mouse or touch input, and
-// a `"paste"` property of true to transactions caused by a paste..
+// a `"uiEvent"` property of that may be `"paste"`, `"cut"`, or `"drop"`.
 export class Transaction extends Transform {
   constructor(state) {
     super(state.doc)
