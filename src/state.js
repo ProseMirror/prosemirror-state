@@ -242,6 +242,7 @@ export class EditorState {
   //     plugins:: ?[Plugin]
   //     The set of active plugins.
   static fromJSON(config, json, pluginFields) {
+    if (!json) throw new RangeError("Invalid input for EditorState.fromJSON")
     if (!config.schema) throw new RangeError("Required config field 'schema' missing")
     let $config = new Configuration(config.schema, config.plugins)
     let instance = new EditorState($config)

@@ -166,15 +166,10 @@ export class Selection {
   // Deserialize the JSON representation of a selection. Must be
   // implemented for custom classes (as a static class method).
   static fromJSON(doc, json) {
+    if (!json || !json.type) throw new RangeError("Invalid input for Selection.fromJSON")
     let cls = classesById[json.type]
-    if (!cls) return this.backwardsCompatFromJSON(doc, json)
+    if (!cls) throw new RangeError(`No selection type ${json.type} defined`)
     return cls.fromJSON(doc, json)
-  }
-
-  static backwardsCompatFromJSON(doc, json) {
-    if (json.anchor != null) return TextSelection.fromJSON(doc, json)
-    if (json.node != null) return NodeSelection.fromJSON(doc, {anchor: json.node, head: json.after})
-    throw new RangeError("Unrecognized JSON data " + JSON.stringify(json))
   }
 
   // :: (string, constructor<Selection>)
@@ -279,6 +274,8 @@ export class TextSelection extends Selection {
   }
 
   static fromJSON(doc, json) {
+    if (typeof json.anchor != "number" || typeof json.head != "number")
+      throw new RangeError("Invalid input for TextSelection.fromJSON")
     return new TextSelection(doc.resolve(json.anchor), doc.resolve(json.head))
   }
 
@@ -370,6 +367,8 @@ export class NodeSelection extends Selection {
   getBookmark() { return new NodeBookmark(this.anchor) }
 
   static fromJSON(doc, json) {
+    if (typeof json.anchor != "number")
+      throw new RangeError("Invalid input for NodeSelection.fromJSON")
     return new NodeSelection(doc.resolve(json.anchor))
   }
 
