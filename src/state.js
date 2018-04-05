@@ -27,7 +27,7 @@ const baseFields = [
   }),
 
   new FieldDesc("storedMarks", {
-    init() { return null },
+    init(config) { return config.storedMarks || null },
     apply(tr, _marks, _old, state) { return state.selection.$cursor ? tr.storedMarks : null }
   }),
 
@@ -175,6 +175,9 @@ export class EditorState {
   //      selection:: ?Selection
   //      A valid selection in the document.
   //
+  //      storedMarks:: ?[Mark]
+  //      The initial set of [stored marks](#state.EditorState.storedMarks).
+  //
   //      plugins:: ?[Plugin]
   //      The plugins that should be active in this state.
   static create(config) {
@@ -218,6 +221,7 @@ export class EditorState {
   // way `JSON.stringify` calls `toString` methods.
   toJSON(pluginFields) {
     let result = {doc: this.doc.toJSON(), selection: this.selection.toJSON()}
+    if (this.storedMarks) result.storedMarks = this.storedMarks.map(m => m.toJSON())
     if (pluginFields && typeof pluginFields == 'object') for (let prop in pluginFields) {
       if (prop == "doc" || prop == "selection")
         throw new RangeError("The JSON fields `doc` and `selection` are reserved")
@@ -251,6 +255,8 @@ export class EditorState {
         instance.doc = Node.fromJSON(config.schema, json.doc)
       } else if (field.name == "selection") {
         instance.selection = Selection.fromJSON(instance.doc, json.selection)
+      } else if (field.name == "storedMarks") {
+        if (json.storedMarks) instance.storedMarks = json.storedMarks.map(config.schema.markFromJSON)
       } else {
         if (pluginFields) for (let prop in pluginFields) {
           let plugin = pluginFields[prop], state = plugin.spec.state

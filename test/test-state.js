@@ -73,6 +73,13 @@ describe("State", () => {
     ist(messageCountPlugin.getState(deserialized), 0)
   })
 
+  it("supports specifying and persisting storedMarks", () => {
+    let state = EditorState.create({doc: doc(p("ok")), storedMarks: [schema.mark("em")]})
+    ist(state.storedMarks.length, 1)
+    let copy = EditorState.fromJSON({schema}, state.toJSON())
+    ist(copy.storedMarks.length, 1)
+  })
+
   it("supports reconfiguration", () => {
     let state = EditorState.create({plugins: [messageCountPlugin], schema})
     ist(messageCountPlugin.getState(state), 0)
