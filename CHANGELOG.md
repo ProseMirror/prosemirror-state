@@ -1,3 +1,11 @@
+## 1.2.0 (2018-04-05)
+
+### New features
+
+[`EditorState.create`](https://prosemirror.net/docs/ref/#state.EditorState^create) now accepts a `storedMark` option to set the state's stored marks.
+
+[`EditorState.toJSON`](https://prosemirror.net/docs/ref/#state.EditorState.toJSON) and [`fromJSON`](https://prosemirror.net/docs/ref/#state.EditorState^fromJSON) persist the set of stored marks, when available.
+
 ## 1.1.1 (2018-03-15)
 
 ### Bug fixes
