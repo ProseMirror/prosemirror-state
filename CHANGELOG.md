@@ -1,3 +1,9 @@
+## 1.2.1 (2018-07-02)
+
+### Bug fixes
+
+Fixes a bug in the default implementation of `Selection.getBookmark`.
+
 ## 1.2.0 (2018-04-05)
 
 ### New features
