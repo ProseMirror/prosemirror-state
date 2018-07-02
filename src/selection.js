@@ -193,7 +193,7 @@ export class Selection {
   // this method just converts the selection to a text selection and
   // returns the bookmark for that.
   getBookmark() {
-    return TextSelection.between(this.anchor, this.head).getBookmark()
+    return TextSelection.between(this.$anchor, this.$head).getBookmark()
   }
 }
 
