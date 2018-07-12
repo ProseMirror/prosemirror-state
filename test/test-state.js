@@ -103,6 +103,23 @@ describe("State", () => {
   })
 
   it("allows plugins to append transactions", () => {
+    let tr
+    let state = EditorState.create({plugins: [
+      new Plugin({
+        appendTransaction: (trs, oldState, newState) =>
+          newState.tr.insertText("Y")
+      }),
+      new Plugin({
+        appendTransaction: trs => {
+          ist(tr, trs[1].getMeta("appendedTransaction"))
+        }
+      })
+    ], schema})
+    tr = state.tr.insertText("X")
+    state.applyTransaction(tr)
+  })
+
+  it("stores a reference to a rootTransaction for appended transactions", () => {
     let state = EditorState.create({plugins: [transactionPlugin], schema})
     let applied = state.applyTransaction(state.tr.insertText("X").setMeta("append", true))
     ist(applied.state.doc, doc(p("XA")), eq)
