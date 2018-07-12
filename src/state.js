@@ -112,10 +112,10 @@ export class EditorState {
   // be influenced by the [transaction
   // hooks](#state.PluginSpec.filterTransaction) of
   // plugins) along with the new state.
-  applyTransaction(tr) {
-    if (!this.filterTransaction(tr)) return {state: this, transactions: []}
+  applyTransaction(rootTr) {
+    if (!this.filterTransaction(rootTr)) return {state: this, transactions: []}
 
-    let trs = [tr], newState = this.applyInner(tr), seen = null
+    let trs = [rootTr], newState = this.applyInner(rootTr), seen = null
     // This loop repeatedly gives plugins a chance to respond to
     // transactions as new transactions are added, making sure to only
     // pass the transactions the plugin did not see before.
@@ -128,7 +128,7 @@ export class EditorState {
           let tr = n < trs.length &&
               plugin.spec.appendTransaction.call(plugin, n ? trs.slice(n) : trs, oldState, newState)
           if (tr && newState.filterTransaction(tr, i)) {
-            tr.setMeta("appendedTransaction", tr)
+            tr.setMeta("appendedTransaction", rootTr)
             if (!seen) {
               seen = []
               for (let j = 0; j < this.config.plugins.length; j++)
