@@ -1,3 +1,9 @@
+## 1.2.2 (2018-07-23)
+
+### Bug fixes
+
+The `"appendedTransaction"` meta property on appended transactions now points to the root transaction instead of at the transaction itself, which it accidentally did before.
+
 ## 1.2.1 (2018-07-02)
 
 ### Bug fixes
