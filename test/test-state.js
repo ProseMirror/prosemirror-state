@@ -103,27 +103,19 @@ describe("State", () => {
   })
 
   it("allows plugins to append transactions", () => {
-    let tr
-    let state = EditorState.create({plugins: [
-      new Plugin({
-        appendTransaction: (trs, oldState, newState) =>
-          newState.tr.insertText("Y")
-      }),
-      new Plugin({
-        appendTransaction: trs => {
-          ist(tr, trs[1].getMeta("appendedTransaction"))
-        }
-      })
-    ], schema})
-    tr = state.tr.insertText("X")
-    state.applyTransaction(tr)
-  })
-
-  it("stores a reference to a rootTransaction for appended transactions", () => {
     let state = EditorState.create({plugins: [transactionPlugin], schema})
     let applied = state.applyTransaction(state.tr.insertText("X").setMeta("append", true))
     ist(applied.state.doc, doc(p("XA")), eq)
     ist(applied.transactions.length, 2)
+  })
+
+  it("stores a reference to a root transaction for appended transactions", () => {
+    let state = EditorState.create({schema, plugins: [new Plugin({
+      appendTransaction: (_trs, _oldState, newState) => newState.tr.insertText("Y")
+    })]})
+    let {transactions} = state.applyTransaction(state.tr.insertText("X"))
+    ist(transactions.length, 2)
+    ist(transactions[1].getMeta("appendedTransaction"), transactions[0])
   })
 
   it("supports JSON.stringify toJSON arguments", () => {
