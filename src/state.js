@@ -275,6 +275,10 @@ export class EditorState {
 
   // Kludge to allow the view to track mappings between different
   // instances of a state.
+  //
+  // FIXME this is no longer needed as of prosemirror-view 1.9.0,
+  // though due to backwards-compat we should probably keep it around
+  // for a while (if only as a no-op)
   static addApplyListener(f) {
     applyListeners.push(f)
   }
