@@ -1,3 +1,9 @@
+## 1.2.3 (2019-05-08)
+
+### Bug fixes
+
+The [`insertText`](https://prosemirror.net/docs/ref/#state.Transaction.insertText) method now collapses the selection to the end of the inserted text, even when given explicit start/end positions.
+
 ## 1.2.2 (2018-07-23)
 
 ### Bug fixes
