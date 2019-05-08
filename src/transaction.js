@@ -1,5 +1,6 @@
 import {Transform} from "prosemirror-transform"
 import {Mark} from "prosemirror-model"
+import {Selection} from "./selection"
 
 const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 
@@ -160,7 +161,9 @@ export class Transaction extends Transform {
         let $from = this.doc.resolve(from)
         marks = to == from ? $from.marks() : $from.marksAcross(this.doc.resolve(to))
       }
-      return this.replaceRangeWith(from, to, schema.text(text, marks))
+      this.replaceRangeWith(from, to, schema.text(text, marks))
+      if (!this.selection.empty) this.setSelection(Selection.near(this.selection.$to))
+      return this
     }
   }
 
