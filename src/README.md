@@ -37,3 +37,8 @@ ProseMirror has a plugin system.
 @StateField
 @Plugin
 @PluginKey
+
+### Tracers
+
+@Tracer
+@tracers

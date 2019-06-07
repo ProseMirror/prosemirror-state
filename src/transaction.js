@@ -1,6 +1,7 @@
 import {Transform} from "prosemirror-transform"
 import {Mark} from "prosemirror-model"
 import {Selection} from "./selection"
+import {PluginKey} from "./plugin"
 
 const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 
@@ -201,3 +202,38 @@ export class Transaction extends Transform {
     return (this.updated & UPDATED_SCROLL) > 0
   }
 }
+
+// ::- A tracer is a value that can be attached to a transaction step
+// (via [`setMeta`](#state.Transaction.setMeta) and the
+// [`tracers`](#state.tracers) key) in order to be able to see when
+// that step is being undone or redone later on.
+export class Tracer {
+  // :: (number, string | PluginKey, *)
+  // Create a tracer for a new step. The index should point at the
+  // offset that step has in the transaction's `steps` array.
+  constructor(index, tag, value = null, event = "do") {
+    // The index of the step that this tracer describes in the
+    // transaction.
+    this.index = index
+    // A string or plugin key that identifies the type of the tracer,
+    // used to identify it and distinguish it from tracers that other
+    // modules might be adding.
+    this.tag = tag
+    // Additional data associated with the tracer.
+    this.value = value
+    // :: union<"do", "undo", "redo">
+    // Indicates whether the transaction applies this step for the
+    // first time (`"do"`), undoes it (`"undo"`) or redoes it
+    // (`"redo"`).
+    this.event = event
+  }
+}
+
+// :: PluginKey
+// This is the name of the [transaction metadata
+// property](#state.transaction.setMeta) under which
+// [tracers](#state.Tracer) are stored. When set, it should hold an
+// array of `Tracer` objects. You add tracers by setting this property
+// on a transaction you create, and you track tracers by inspecting
+// this property on applied transactions.
+export const tracers = new PluginKey("tracers")

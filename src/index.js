@@ -1,6 +1,6 @@
 export {Selection, SelectionRange, TextSelection, NodeSelection, AllSelection} from "./selection"
 
-export {Transaction} from "./transaction"
+export {Transaction, Tracer, tracers} from "./transaction"
 
 export {EditorState} from "./state"
 
