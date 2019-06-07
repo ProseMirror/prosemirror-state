@@ -1,7 +1,7 @@
 import {Node} from "prosemirror-model"
 
 import {Selection} from "./selection"
-import {Transaction} from "./transaction"
+import {Transaction, tracers} from "./transaction"
 
 function bind(f, self) {
   return !self || !f ? f : f.bind(self)
@@ -106,6 +106,19 @@ export class EditorState {
     return true
   }
 
+  // : (Transaction)
+  // Call plugins' `attachTracers` hooks.
+  attachTracers(tr) {
+    for (let i = 0; i < this.config.plugins.length; i++) {
+      let plugin = this.config.plugins[i]
+      if (plugin.spec.attachTracers) {
+        let result = plugin.spec.attachTracers(tr)
+        if (result && result.length)
+          plugin.setMeta(result.concat(plugin.getMeta(tracers) || []))
+      }
+    }
+  }
+
   // :: (Transaction) → {state: EditorState, transactions: [Transaction]}
   // Verbose variant of [`apply`](#state.EditorState.apply) that
   // returns the precise transactions that were applied (which might
@@ -114,6 +127,7 @@ export class EditorState {
   // plugins) along with the new state.
   applyTransaction(rootTr) {
     if (!this.filterTransaction(rootTr)) return {state: this, transactions: []}
+    this.attachTracers(rootTr)
 
     let trs = [rootTr], newState = this.applyInner(rootTr), seen = null
     // This loop repeatedly gives plugins a chance to respond to
@@ -128,6 +142,7 @@ export class EditorState {
           let tr = n < trs.length &&
               plugin.spec.appendTransaction.call(plugin, n ? trs.slice(n) : trs, oldState, newState)
           if (tr && newState.filterTransaction(tr, i)) {
+            this.attachTracers(tr)
             tr.setMeta("appendedTransaction", rootTr)
             if (!seen) {
               seen = []

@@ -40,6 +40,10 @@
 //   applied by the state, allowing the plugin to cancel it (by
 //   returning false).
 //
+//   attachTracers:: ?(transaction: Transaction) → [Tracer]
+//   Allows attaching [tracers](#state.Tracer) to transactions applied
+//   to this state. Called right after `filterTransaction`.
+//
 //   appendTransaction:: ?(transactions: [Transaction], oldState: EditorState, newState: EditorState) → ?Transaction
 //   Allows the plugin to append another transaction to be applied
 //   after the given array of transactions. When another plugin
