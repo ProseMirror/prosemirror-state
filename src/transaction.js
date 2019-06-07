@@ -221,11 +221,19 @@ export class Tracer {
     this.tag = tag
     // Additional data associated with the tracer.
     this.value = value
-    // :: union<"do", "undo", "redo">
+    // :: string
     // Indicates whether the transaction applies this step for the
     // first time (`"do"`), undoes it (`"undo"`) or redoes it
-    // (`"redo"`).
+    // (`"redo"`), or, when rebased by the collab module, inverted
+    // (`"rebase-invert"`) or reapplied (`"rebase-reapply"`).
     this.event = event
+  }
+
+  // :: (number, string) → Tracer
+  // Create a tracer instance that's a copy of this one with
+  // different `index` and `event` properties.
+  copy(index, event) {
+    return new Tracer(index, this.tag, this.value, event)
   }
 }
 
