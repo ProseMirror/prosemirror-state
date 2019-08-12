@@ -58,6 +58,8 @@ export class Transaction extends Transform {
   // Update the transaction's current selection. Will determine the
   // selection that the editor gets when the transaction is applied.
   setSelection(selection) {
+    if (selection.$from.doc != this.doc)
+      throw new RangeError("Selection passed to setSelection must point at the current document")
     this.curSelection = selection
     this.curSelectionFor = this.steps.length
     this.updated = (this.updated | UPDATED_SEL) & ~UPDATED_MARKS
