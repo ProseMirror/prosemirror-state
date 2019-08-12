@@ -1,3 +1,9 @@
+## 1.2.4 (2019-08-12)
+
+### Bug fixes
+
+`Transaction.setSelection` now immediately checks whether the given selection points into the proper document, rather than silently accepting an invalid selection.
+
 ## 1.2.3 (2019-05-08)
 
 ### Bug fixes
