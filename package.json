@@ -14,7 +14,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/prosemirror/prosemirror.git"
+    "url": "git://github.com/prosemirror/prosemirror-state.git"
   },
   "dependencies": {
     "prosemirror-model": "^1.0.0",
