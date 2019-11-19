@@ -1,4 +1,4 @@
-const {TextSelection} = require("../dist")
+const {TextSelection} = require("..")
 
 const {schema, eq, doc, blockquote, pre, p, li, ul, img, em, a, br, hr} = require("prosemirror-test-builder")
 const {TestState} = require("./state")

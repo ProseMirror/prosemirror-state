@@ -1,4 +1,4 @@
-const {EditorState, Selection, TextSelection, NodeSelection} = require("../dist")
+const {EditorState, Selection, TextSelection, NodeSelection} = require("..")
 
 // Wrapper object to make writing state tests easier.
 

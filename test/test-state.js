@@ -1,4 +1,4 @@
-const {EditorState, TextSelection, Plugin, PluginKey} = require("../dist")
+const {EditorState, TextSelection, Plugin, PluginKey} = require("..")
 const {schema, eq, doc, p} = require("prosemirror-test-builder")
 const ist = require("ist")
 
