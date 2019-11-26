@@ -1,19 +1,19 @@
 # prosemirror-state
 
-[ [**WEBSITE**](http://prosemirror.net) | [**ISSUES**](https://github.com/prosemirror/prosemirror/issues) | [**FORUM**](https://discuss.prosemirror.net) | [**GITTER**](https://gitter.im/ProseMirror/prosemirror) | [**CHANGELOG**](https://github.com/ProseMirror/prosemirror-state/blob/master/CHANGELOG.md) ]
+[ [**WEBSITE**](https://prosemirror.net) | [**ISSUES**](https://github.com/prosemirror/prosemirror/issues) | [**FORUM**](https://discuss.prosemirror.net) | [**GITTER**](https://gitter.im/ProseMirror/prosemirror) | [**CHANGELOG**](https://github.com/ProseMirror/prosemirror-state/blob/master/CHANGELOG.md) ]
 
-This is a [core module](http://prosemirror.net/docs/ref/#state) of [ProseMirror](http://prosemirror.net).
+This is a [core module](https://prosemirror.net/docs/ref/#state) of [ProseMirror](https://prosemirror.net).
 ProseMirror is a well-behaved rich semantic content editor based on
 contentEditable, with support for collaborative editing and custom
 document schemas.
 
-This [module](http://prosemirror.net/docs/ref/#state) implements the
+This [module](https://prosemirror.net/docs/ref/#state) implements the
 editor state, which tracks the current document and selection, and
 managed plugins.
 
-The [project page](http://prosemirror.net) has more information, a
-number of [examples](http://prosemirror.net/examples/) and the
-[documentation](http://prosemirror.net/docs/).
+The [project page](https://prosemirror.net) has more information, a
+number of [examples](https://prosemirror.net/examples/) and the
+[documentation](https://prosemirror.net/docs/).
 
 This code is released under an
 [MIT license](https://github.com/prosemirror/prosemirror/tree/master/LICENSE).
