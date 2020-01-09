@@ -44,6 +44,15 @@ describe("State", () => {
     ist(newState.selection.from, 3)
   })
 
+  it("applies transaction with custom transformation", () => {
+    let state = EditorState.create({schema})
+    let fn = (transaction, text) => transaction.insertText(text)
+    let newState = state.apply(state.tr.chain(fn, "hi"))
+    ist(state.doc, doc(p()), eq)
+    ist(newState.doc, doc(p("hi")), eq)
+    ist(newState.selection.from, 3)
+  });
+
   it("supports plugin fields", () => {
     let state = EditorState.create({plugins: [messageCountPlugin], schema})
     let newState = state.apply(state.tr).apply(state.tr)

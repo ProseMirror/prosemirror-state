@@ -41,6 +41,14 @@ export class Transaction extends Transform {
     this.meta = Object.create(null)
   }
 
+  // :: ((Transaction, ...args: *)) → Transaction
+  // Applies the given function to the transaction. The function must
+  // take a [`Transaction`](#state.Transaction) as its first argument.
+  chain(transactionFunction, ...args) {
+    transactionFunction(this, ...args)
+    return this
+  }
+
   // :: Selection
   // The transaction's current selection. This defaults to the editor
   // selection [mapped](#state.Selection.map) through the steps in the
