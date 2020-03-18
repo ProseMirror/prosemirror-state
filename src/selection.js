@@ -416,6 +416,16 @@ export class AllSelection extends Selection {
     super(doc.resolve(0), doc.resolve(doc.content.size))
   }
 
+  replace(tr, content = Slice.empty) {
+    if (content == Slice.empty) {
+      tr.delete(0, tr.doc.content.size)
+      let sel = Selection.atStart(tr.doc)
+      if (!sel.eq(tr.selection)) tr.setSelection(sel)
+    } else {
+      super.replace(tr, content)
+    }
+  }
+
   toJSON() { return {type: "all"} }
 
   static fromJSON(doc) { return new AllSelection(doc) }
