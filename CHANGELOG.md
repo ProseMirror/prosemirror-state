@@ -1,3 +1,9 @@
+## 1.3.3 (2020-03-18)
+
+### Bug fixes
+
+When deleting a whole-document-selection causes default content to be generated, make sure the selection is moved to the start of the document.
+
 ## 1.3.2 (2019-11-20)
 
 ### Bug fixes
