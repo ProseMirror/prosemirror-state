@@ -18,14 +18,18 @@
   },
   "dependencies": {
     "prosemirror-model": "^1.0.0",
-    "prosemirror-transform": "^1.0.0"
+    "prosemirror-transform": "^1.0.0",
+    "prosemirror-view": "^1.15.2"
   },
   "devDependencies": {
+    "@rollup/plugin-buble": "^0.20.0",
+    "@types/prosemirror-model": "^1.7.2",
+    "@types/prosemirror-transform": "^1.1.1",
+    "@types/prosemirror-view": "^1.15.0",
     "ist": "^1.0.0",
     "mocha": "^3.0.2",
     "prosemirror-test-builder": "^1.0.0",
-    "rollup": "^1.26.3",
-    "@rollup/plugin-buble": "^0.20.0"
+    "rollup": "^1.26.3"
   },
   "scripts": {
     "test": "mocha test/test-*.js",

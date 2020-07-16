@@ -1,5 +1,5 @@
 import {Transform} from "prosemirror-transform"
-import {Mark} from "prosemirror-model"
+import {Mark, Schema} from "prosemirror-model"
 import {Selection} from "./selection"
 
 const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
@@ -21,7 +21,7 @@ const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 // it will attach a property `"pointer"` with the value `true` to
 // selection transactions directly caused by mouse or touch input, and
 // a `"uiEvent"` property of that may be `"paste"`, `"cut"`, or `"drop"`.
-export class Transaction extends Transform {
+export class Transaction <S extends Schema = any> extends Transform {
   constructor(state) {
     super(state.doc)
     // :: number
