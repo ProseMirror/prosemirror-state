@@ -48,6 +48,8 @@
 //   transactions, i.e. it won't be passed transactions that it
 //   already saw.
 
+import { Schema } from "prosemirror-model"
+
 function bindProps(obj, self, target) {
   for (let prop in obj) {
     let val = obj[prop]
@@ -61,7 +63,7 @@ function bindProps(obj, self, target) {
 // ::- Plugins bundle functionality that can be added to an editor.
 // They are part of the [editor state](#state.EditorState) and
 // may influence that state and the view that contains it.
-export class Plugin {
+export class Plugin<T = any, S extends Schema = any> {
   // :: (PluginSpec)
   // Create a plugin.
   constructor(spec) {

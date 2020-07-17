@@ -141,6 +141,10 @@ export class Selection<S extends Schema = any> {
   // `type` property whose value matches the ID under which you
   // [registered](#state.Selection^jsonID) your class.
 
+  toJSON() {
+    return {};
+  }
+
   // :: (ResolvedPos, number, ?bool) → ?Selection
   // Find a valid cursor or leaf node selection starting at the given
   // position and searching back if `dir` is negative, and forward if
@@ -271,7 +275,7 @@ export class SelectionRange<S extends Schema = any> {
 export class TextSelection<S extends Schema = any> extends Selection {
   // :: (ResolvedPos, ?ResolvedPos)
   // Construct a text selection between the given points.
-  constructor($anchor:ResolvedPos<S>, $head:ResolvedPos<S> = $anchor) {
+  constructor($anchor: ResolvedPos<S>, $head: ResolvedPos<S> = $anchor) {
     super($anchor, $head);
   }
 
@@ -282,14 +286,14 @@ export class TextSelection<S extends Schema = any> extends Selection {
     return this.$anchor.pos == this.$head.pos ? this.$head : null;
   }
 
-  map(doc:ProsemirrorNode<S>, mapping) {
+  map(doc: ProsemirrorNode<S>, mapping) {
     let $head = doc.resolve(mapping.map(this.head));
     if (!$head.parent.inlineContent) return Selection.near($head);
     let $anchor = doc.resolve(mapping.map(this.anchor));
     return new TextSelection($anchor.parent.inlineContent ? $anchor : $head, $head);
   }
 
-  replace(tr:Transaction<S>, content:Slice<S> = Slice.empty) {
+  replace(tr: Transaction<S>, content: Slice<S> = Slice.empty) {
     super.replace(tr, content);
     if (content == Slice.empty) {
       let marks = this.$from.marksAcross(this.$to);
@@ -309,7 +313,7 @@ export class TextSelection<S extends Schema = any> extends Selection {
     return { type: "text", anchor: this.anchor, head: this.head };
   }
 
-  static fromJSON<S extends Schema = any>(doc: ProsemirrorNode<S>, json: { [key: string]: any })  {
+  static fromJSON<S extends Schema = any>(doc: ProsemirrorNode<S>, json: { [key: string]: any }) {
     if (typeof json.anchor != "number" || typeof json.head != "number")
       throw new RangeError("Invalid input for TextSelection.fromJSON");
     return new TextSelection(doc.resolve(json.anchor), doc.resolve(json.head));
@@ -317,7 +321,7 @@ export class TextSelection<S extends Schema = any> extends Selection {
 
   // :: (Node, number, ?number) → TextSelection
   // Create a text selection from non-resolved positions.
-  static create<S extends Schema = any>(doc: ProsemirrorNode<S>, anchor:number, head:number = anchor) {
+  static create<S extends Schema = any>(doc: ProsemirrorNode<S>, anchor: number, head: number = anchor) {
     let $anchor = doc.resolve(anchor);
     return new this($anchor, head == anchor ? $anchor : doc.resolve(head));
   }
@@ -362,7 +366,7 @@ class TextBookmark {
   map(mapping) {
     return new TextBookmark(mapping.map(this.anchor), mapping.map(this.head));
   }
-  resolve(doc:ProsemirrorNode) {
+  resolve(doc: ProsemirrorNode) {
     return TextSelection.between(doc.resolve(this.anchor), doc.resolve(this.head));
   }
 }
@@ -411,7 +415,7 @@ export class NodeSelection<S extends Schema = any> extends Selection {
     return new NodeBookmark(this.anchor);
   }
 
-  static fromJSON(doc: ProsemirrorNode<S>, json:) {
+  static fromJSON<S extends Schema = any>(doc: ProsemirrorNode<S>, json: { [key: string]: any }) {
     if (typeof json.anchor != "number") throw new RangeError("Invalid input for NodeSelection.fromJSON");
     return new NodeSelection(doc.resolve(json.anchor));
   }
@@ -436,14 +440,14 @@ Selection.jsonID("node", NodeSelection);
 
 class NodeBookmark<S extends Schema = any> {
   anchor: number;
-  constructor(anchor:number) {
+  constructor(anchor: number) {
     this.anchor = anchor;
   }
   map(mapping) {
     let { deleted, pos } = mapping.mapResult(this.anchor);
     return deleted ? new TextBookmark(pos, pos) : new NodeBookmark(pos);
   }
-  resolve(doc:ProsemirrorNode<S>) {
+  resolve(doc: ProsemirrorNode<S>) {
     let $pos = doc.resolve(this.anchor),
       node = $pos.nodeAfter;
     if (node && NodeSelection.isSelectable(node)) return new NodeSelection($pos);
@@ -458,7 +462,7 @@ class NodeBookmark<S extends Schema = any> {
 export class AllSelection<S extends Schema = any> extends Selection {
   // :: (Node)
   // Create an all-selection over the given document.
-  constructor(doc:ProsemirrorNode<S>) {
+  constructor(doc: ProsemirrorNode<S>) {
     super(doc.resolve(0), doc.resolve(doc.content.size));
   }
 
@@ -466,11 +470,11 @@ export class AllSelection<S extends Schema = any> extends Selection {
     return { type: "all" };
   }
 
-  static fromJSON<S extends Schema = any>(doc:ProsemirrorNode<S>) {
+  static fromJSON<S extends Schema = any>(doc: ProsemirrorNode<S>) {
     return new AllSelection(doc);
   }
 
-  map(doc:ProsemirrorNode<S>) {
+  map(doc: ProsemirrorNode<S>) {
     return new AllSelection(doc);
   }
 
@@ -489,7 +493,7 @@ const AllBookmark = {
   map() {
     return this;
   },
-  resolve(doc:ProsemirrorNode) {
+  resolve(doc: ProsemirrorNode) {
     return new AllSelection(doc);
   },
 };
