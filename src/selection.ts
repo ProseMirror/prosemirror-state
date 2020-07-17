@@ -434,16 +434,16 @@ NodeSelection.prototype.visible = false;
 
 Selection.jsonID("node", NodeSelection);
 
-class NodeBookmark {
-  anchor: any;
-  constructor(anchor) {
+class NodeBookmark<S extends Schema = any> {
+  anchor: number;
+  constructor(anchor:number) {
     this.anchor = anchor;
   }
   map(mapping) {
     let { deleted, pos } = mapping.mapResult(this.anchor);
     return deleted ? new TextBookmark(pos, pos) : new NodeBookmark(pos);
   }
-  resolve(doc) {
+  resolve(doc:ProsemirrorNode<S>) {
     let $pos = doc.resolve(this.anchor),
       node = $pos.nodeAfter;
     if (node && NodeSelection.isSelectable(node)) return new NodeSelection($pos);
@@ -455,10 +455,10 @@ class NodeBookmark {
 // (which can not necessarily be expressed with a text selection, when
 // there are for example leaf block nodes at the start or end of the
 // document).
-export class AllSelection extends Selection {
+export class AllSelection<S extends Schema = any> extends Selection {
   // :: (Node)
   // Create an all-selection over the given document.
-  constructor(doc) {
+  constructor(doc:ProsemirrorNode<S>) {
     super(doc.resolve(0), doc.resolve(doc.content.size));
   }
 
@@ -466,11 +466,11 @@ export class AllSelection extends Selection {
     return { type: "all" };
   }
 
-  static fromJSON(doc) {
+  static fromJSON<S extends Schema = any>(doc:ProsemirrorNode<S>) {
     return new AllSelection(doc);
   }
 
-  map(doc) {
+  map(doc:ProsemirrorNode<S>) {
     return new AllSelection(doc);
   }
 
@@ -489,7 +489,7 @@ const AllBookmark = {
   map() {
     return this;
   },
-  resolve(doc) {
+  resolve(doc:ProsemirrorNode) {
     return new AllSelection(doc);
   },
 };
