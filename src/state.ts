@@ -121,6 +121,7 @@ interface IEditorStateConfig {
   schema: Schema;
   plugins: Plugin[];
   fields: any[];
+  pluginsByKey: { [key: string]: Plugin };
 }
 
 // ::- The state of a ProseMirror editor is represented by an object

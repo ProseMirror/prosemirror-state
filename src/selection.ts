@@ -80,6 +80,11 @@ export class Selection<S extends Schema = any> {
   // Map this selection through a [mappable](#transform.Mappable) thing. `doc`
   // should be the new document to which we are mapping.
 
+  // XXX 原代码没有此处，自己添加
+  map(doc: ProsemirrorNode<S>, mapping) {
+    return new Selection(this.$anchor, this.$head);
+  }
+
   // :: () → Slice
   // Get the content of this selection as a slice.
   content(): Slice<S> {

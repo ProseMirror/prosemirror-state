@@ -48,38 +48,47 @@
 //   transactions, i.e. it won't be passed transactions that it
 //   already saw.
 
-import { Schema } from "prosemirror-model"
+import { Schema } from "prosemirror-model";
+import { EditorProps } from "prosemirror-view";
+import { PluginSpec } from "./plugin.d";
+import { EditorState } from "./state";
 
-function bindProps(obj, self, target) {
+function bindProps(obj: any, self: any, target: any) {
   for (let prop in obj) {
-    let val = obj[prop]
-    if (val instanceof Function) val = val.bind(self)
-    else if (prop == "handleDOMEvents") val = bindProps(val, self, {})
-    target[prop] = val
+    let val = obj[prop];
+    if (val instanceof Function) val = val.bind(self);
+    else if (prop == "handleDOMEvents") val = bindProps(val, self, {});
+    target[prop] = val;
   }
-  return target
+  return target;
 }
 
 // ::- Plugins bundle functionality that can be added to an editor.
 // They are part of the [editor state](#state.EditorState) and
 // may influence that state and the view that contains it.
 export class Plugin<T = any, S extends Schema = any> {
+  props: EditorProps<Plugin<T, S>, S>;
+  spec: PluginSpec<T, S>;
+  key: string;
+
   // :: (PluginSpec)
   // Create a plugin.
-  constructor(spec) {
+  constructor(spec: PluginSpec) {
     // :: EditorProps
     // The [props](#view.EditorProps) exported by this plugin.
-    this.props = {}
-    if (spec.props) bindProps(spec.props, this, this.props)
+    this.props = {};
+    if (spec.props) bindProps(spec.props, this, this.props);
     // :: Object
     // The plugin's [spec object](#state.PluginSpec).
-    this.spec = spec
-    this.key = spec.key ? spec.key.key : createKey("plugin")
+    this.spec = spec;
+    this.key = spec.key ? spec.key.key : createKey("plugin");
   }
 
   // :: (EditorState) → any
   // Extract the plugin's state field from an editor state.
-  getState(state) { return state[this.key] }
+  getState(state: EditorState<S>) {
+    return state[this.key];
+  }
 }
 
 // StateField:: interface<T>
@@ -108,29 +117,36 @@ export class Plugin<T = any, S extends Schema = any> {
 //   Deserialize the JSON representation of this field. Note that the
 //   `state` argument is again a half-initialized state.
 
-const keys = Object.create(null)
+const keys = Object.create(null);
 
-function createKey(name) {
-  if (name in keys) return name + "$" + ++keys[name]
-  keys[name] = 0
-  return name + "$"
+function createKey(name: string) {
+  if (name in keys) return name + "$" + ++keys[name];
+  keys[name] = 0;
+  return name + "$";
 }
 
 // ::- A key is used to [tag](#state.PluginSpec.key)
 // plugins in a way that makes it possible to find them, given an
 // editor state. Assigning a key does mean only one plugin of that
 // type can be active in a state.
-export class PluginKey {
+export class PluginKey<T = any, S extends Schema = any> {
+  key: string;
   // :: (?string)
   // Create a plugin key.
-  constructor(name = "key") { this.key = createKey(name) }
+  constructor(name = "key") {
+    this.key = createKey(name);
+  }
 
   // :: (EditorState) → ?Plugin
   // Get the active plugin with this key, if any, from an editor
   // state.
-  get(state) { return state.config.pluginsByKey[this.key] }
+  get(state: EditorState<S>): Plugin<T, S> | null | undefined {
+    return state.config.pluginsByKey[this.key];
+  }
 
   // :: (EditorState) → ?any
   // Get the plugin's state from an editor state.
-  getState(state) { return state[this.key] }
+  getState(state: EditorState<S>): T | null | undefined {
+    return state[this.key];
+  }
 }
