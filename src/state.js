@@ -45,7 +45,7 @@ class Configuration {
     this.fields = baseFields.concat()
     this.plugins = []
     this.pluginsByKey = Object.create(null)
-    if (plugins) plugins.forEach(plugin => {
+    if (plugins) plugins.filter(Boolean).forEach(plugin => {
       if (this.pluginsByKey[plugin.key])
         throw new RangeError("Adding different instances of a keyed plugin (" + plugin.key + ")")
       this.plugins.push(plugin)
