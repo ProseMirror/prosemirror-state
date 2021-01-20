@@ -167,7 +167,7 @@ export class EditorState {
   //   config::- Configuration options. Must contain `schema` or `doc` (or both).
   //
   //      schema:: ?Schema
-  //      The schema to use.
+  //      The schema to use (only relevant if no `doc` is specified).
   //
   //      doc:: ?Node
   //      The starting document.
@@ -181,7 +181,7 @@ export class EditorState {
   //      plugins:: ?[Plugin]
   //      The plugins that should be active in this state.
   static create(config) {
-    let $config = new Configuration(config.schema || config.doc.type.schema, config.plugins)
+    let $config = new Configuration(config.doc ? config.doc.type.schema : config.schema, config.plugins)
     let instance = new EditorState($config)
     for (let i = 0; i < $config.fields.length; i++)
       instance[$config.fields[i].name] = $config.fields[i].init(config, instance)
@@ -198,13 +198,10 @@ export class EditorState {
   //
   //   config::- configuration options
   //
-  //     schema:: ?Schema
-  //     New schema to use.
-  //
-  //     plugins:: ?[Plugin]
+  //     plugins:: [Plugin]
   //     New set of active plugins.
   reconfigure(config) {
-    let $config = new Configuration(config.schema || this.schema, config.plugins)
+    let $config = new Configuration(this.schema, config.plugins)
     let fields = $config.fields, instance = new EditorState($config)
     for (let i = 0; i < fields.length; i++) {
       let name = fields[i].name
