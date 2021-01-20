@@ -1,3 +1,9 @@
+## 1.3.4 (2021-01-20)
+
+### Bug fixes
+
+Remove (broken, poorly conceptualized) `schema` option to `EditorState.reconfigure`.
+
 ## 1.3.3 (2020-03-18)
 
 ### Bug fixes
