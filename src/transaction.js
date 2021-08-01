@@ -14,7 +14,7 @@ const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 // marks](#state.EditorState.storedMarks). In addition, you can store
 // metadata properties in a transaction, which are extra pieces of
 // information that client code or plugins can use to describe what a
-// transacion represents, so that they can update their [own
+// transaction represents, so that they can update their [own
 // state](#state.StateField) accordingly.
 //
 // The [editor view](#view.EditorView) uses a few metadata properties:
