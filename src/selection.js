@@ -230,6 +230,14 @@ export class SelectionRange {
   }
 }
 
+let warnedAboutTextSelection = false
+function checkTextSelection($pos) {
+  if (!warnedAboutTextSelection && !$pos.parent.inlineContent) {
+    warnedAboutTextSelection = true
+    console.warn("TextSelection endpoint not pointing into a node with inline content (" + $pos.parent.type.name + ")")
+  }
+}
+
 // ::- A text selection represents a classical editor selection, with
 // a head (the moving side) and anchor (immobile side), both of which
 // point into textblock nodes. It can be empty (a regular cursor
@@ -238,6 +246,8 @@ export class TextSelection extends Selection {
   // :: (ResolvedPos, ?ResolvedPos)
   // Construct a text selection between the given points.
   constructor($anchor, $head = $anchor) {
+    checkTextSelection($anchor)
+    checkTextSelection($head)
     super($anchor, $head)
   }
 
