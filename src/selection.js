@@ -234,7 +234,7 @@ let warnedAboutTextSelection = false
 function checkTextSelection($pos) {
   if (!warnedAboutTextSelection && !$pos.parent.inlineContent) {
     warnedAboutTextSelection = true
-    console.warn("TextSelection endpoint not pointing into a node with inline content (" + $pos.parent.type.name + ")")
+    console["warn"]("TextSelection endpoint not pointing into a node with inline content (" + $pos.parent.type.name + ")")
   }
 }
 
