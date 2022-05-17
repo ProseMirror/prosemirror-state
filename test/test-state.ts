@@ -1,6 +1,6 @@
-const {EditorState, TextSelection, Plugin, PluginKey} = require("..")
-const {schema, eq, doc, p} = require("prosemirror-test-builder")
-const ist = require("ist")
+import {EditorState, TextSelection, Plugin, PluginKey} from "prosemirror-state"
+import {schema, eq, doc, p} from "prosemirror-test-builder"
+import ist from "ist"
 
 const messageCountKey = new PluginKey("messageCount")
 const messageCountPlugin = new Plugin({
@@ -13,7 +13,7 @@ const messageCountPlugin = new Plugin({
   },
   props: {
     testProp() { return this }
-  }
+  } as any
 })
 
 const transactionPlugin = new Plugin({
@@ -75,9 +75,9 @@ describe("State", () => {
 
   it("supports specifying and persisting storedMarks", () => {
     let state = EditorState.create({doc: doc(p("ok")), storedMarks: [schema.mark("em")]})
-    ist(state.storedMarks.length, 1)
+    ist(state.storedMarks!.length, 1)
     let copy = EditorState.fromJSON({schema}, state.toJSON())
-    ist(copy.storedMarks.length, 1)
+    ist(copy.storedMarks!.length, 1)
   })
 
   it("supports reconfiguration", () => {
@@ -126,7 +126,7 @@ describe("State", () => {
 
 describe("Plugin", () => {
   it("calls prop functions bound to the plugin", () => {
-    ist(messageCountPlugin.props.testProp(), messageCountPlugin)
+    ist((messageCountPlugin.props as any).testProp(), messageCountPlugin)
   })
 
   it("can be found by key", () => {

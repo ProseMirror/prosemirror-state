@@ -2,4 +2,4 @@
 .tern-port
 /dist
 /notes.txt
-webpack.config.js
+/test/*.js
