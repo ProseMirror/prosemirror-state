@@ -4,7 +4,7 @@ import {Transaction} from "./transaction"
 
 /// This is the type passed to the [`Plugin`](#state.Plugin)
 /// constructor. It provides a definition for a plugin.
-export interface PluginSpec {
+export interface PluginSpec<PluginState> {
   /// The [view props](#view.EditorProps) added by this plugin. Props
   /// that are functions will be bound to have the plugin instance as
   /// their `this` binding.
@@ -12,7 +12,7 @@ export interface PluginSpec {
 
   /// Allows a plugin to define a [state field](#state.StateField), an
   /// extra slot in the state object in which it can keep its own data.
-  state?: StateField<any>
+  state?: StateField<PluginState>
 
   /// Can be used to make this a keyed plugin. You can have only one
   /// plugin with a given key in a given state, but it is possible to
@@ -38,6 +38,10 @@ export interface PluginSpec {
   /// transactions, i.e. it won't be passed transactions that it
   /// already saw.
   appendTransaction?: (transactions: readonly Transaction[], oldState: EditorState, newState: EditorState) => Transaction | null | undefined
+
+  /// Additional properties are allowed on plugin specs, which can be
+  /// read via [`Plugin.spec`](#state.Plugin.spec).
+  [key: string]: any
 }
 
 /// A stateful object that can be installed in an editor by a
@@ -64,11 +68,11 @@ function bindProps(obj: {[prop: string]: any}, self: any, target: {[prop: string
 /// Plugins bundle functionality that can be added to an editor.
 /// They are part of the [editor state](#state.EditorState) and
 /// may influence that state and the view that contains it.
-export class Plugin {
+export class Plugin<PluginState = any> {
   /// Create a plugin.
   constructor(
     /// The plugin's [spec object](#state.PluginSpec).
-    readonly spec: PluginSpec
+    readonly spec: PluginSpec<PluginState>
   ) {
     if (spec.props) bindProps(spec.props, this, this.props)
     this.key = spec.key ? spec.key.key : createKey("plugin")
@@ -81,7 +85,7 @@ export class Plugin {
   key: string
 
   /// Extract the plugin's state field from an editor state.
-  getState(state: EditorState) { return (state as any)[this.key] }
+  getState(state: EditorState): PluginState | undefined { return (state as any)[this.key] }
 }
 
 /// A plugin spec may provide a state field (under its
@@ -122,7 +126,7 @@ function createKey(name: string) {
 /// that makes it possible to find them, given an editor state.
 /// Assigning a key does mean only one plugin of that type can be
 /// active in a state.
-export class PluginKey {
+export class PluginKey<PluginState = any> {
   /// @internal
   key: string
 
@@ -131,8 +135,8 @@ export class PluginKey {
 
   /// Get the active plugin with this key, if any, from an editor
   /// state.
-  get(state: EditorState): Plugin | undefined { return state.config.pluginsByKey[this.key] }
+  get(state: EditorState): Plugin<PluginState> | undefined { return state.config.pluginsByKey[this.key] }
 
   /// Get the plugin's state from an editor state.
-  getState(state: EditorState): any { return (state as any)[this.key] }
+  getState(state: EditorState): PluginState | undefined { return (state as any)[this.key] }
 }
