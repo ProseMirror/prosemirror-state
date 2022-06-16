@@ -205,7 +205,7 @@ export interface SelectionBookmark {
 
 /// Represents a selected range in a document.
 export class SelectionRange {
-  /// @internal
+  /// Create a range.
   constructor(
     /// The lower bound of the range.
     readonly $from: ResolvedPos,
