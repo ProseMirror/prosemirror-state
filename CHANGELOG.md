@@ -1,3 +1,9 @@
+## 1.4.1 (2022-06-23)
+
+### Bug fixes
+
+Make the `SelectionRange` constructor public in the types.
+
 ## 1.4.0 (2022-05-30)
 
 ### Bug fixes
