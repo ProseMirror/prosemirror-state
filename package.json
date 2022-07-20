@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "prosemirror-model": "^1.0.0",
-    "prosemirror-transform": "^1.0.0"
+    "prosemirror-transform": "^1.0.0",
+    "prosemirror-view": "^1.27.0"
   },
   "devDependencies": {
     "@prosemirror/buildhelper": "^0.1.5",

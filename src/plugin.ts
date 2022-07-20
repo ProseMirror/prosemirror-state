@@ -8,7 +8,7 @@ export interface PluginSpec<PluginState> {
   /// The [view props](#view.EditorProps) added by this plugin. Props
   /// that are functions will be bound to have the plugin instance as
   /// their `this` binding.
-  props?: EditorProps
+  props?: EditorProps<Plugin<PluginState>>
 
   /// Allows a plugin to define a [state field](#state.StateField), an
   /// extra slot in the state object in which it can keep its own data.
@@ -79,7 +79,7 @@ export class Plugin<PluginState = any> {
   }
 
   /// The [props](#view.EditorProps) exported by this plugin.
-  readonly props: EditorProps = {}
+  readonly props: EditorProps<Plugin<PluginState>> = {}
 
   /// @internal
   key: string
