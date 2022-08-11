@@ -119,7 +119,7 @@ export class EditorState {
     return this.applyTransaction(tr).state
   }
 
-  /// @ignore
+  /// @internal
   filterTransaction(tr: Transaction, ignore = -1) {
     for (let i = 0; i < this.config.plugins.length; i++) if (i != ignore) {
       let plugin = this.config.plugins[i]
