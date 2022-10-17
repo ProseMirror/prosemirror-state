@@ -1,3 +1,9 @@
+## 1.4.2 (2022-10-17)
+
+### Bug fixes
+
+Make sure the `this` bindings in editor props defined as part of a plugin spec refers to the proper plugin type.
+
 ## 1.4.1 (2022-06-23)
 
 ### Bug fixes
