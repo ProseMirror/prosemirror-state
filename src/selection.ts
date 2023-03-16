@@ -184,7 +184,7 @@ export abstract class Selection {
   /// Controls whether, when a selection of this type is active in the
   /// browser, the selected range should be visible to the user.
   /// Defaults to `true`.
-  visible!: boolean
+  visible: boolean = true;
 }
 
 Selection.prototype.visible = true
