@@ -32,10 +32,13 @@ const UPDATED_SEL = 1, UPDATED_MARKS = 2, UPDATED_SCROLL = 4
 /// transaction represents, so that they can update their [own
 /// state](#state.StateField) accordingly.
 ///
-/// The [editor view](#view.EditorView) uses a few metadata properties:
-/// it will attach a property `"pointer"` with the value `true` to
-/// selection transactions directly caused by mouse or touch input, and
-/// a `"uiEvent"` property of that may be `"paste"`, `"cut"`, or `"drop"`.
+/// The [editor view](#view.EditorView) uses a few metadata
+/// properties: it will attach a property `"pointer"` with the value
+/// `true` to selection transactions directly caused by mouse or touch
+/// input, a `"composition"` property holding an ID identifying the
+/// composition that caused it to transactions caused by composed DOM
+/// input, and a `"uiEvent"` property of that may be `"paste"`,
+/// `"cut"`, or `"drop"`.
 export class Transaction extends Transform {
   /// The timestamp associated with this transaction, in the same
   /// format as `Date.now()`.
