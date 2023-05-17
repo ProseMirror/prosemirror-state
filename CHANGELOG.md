@@ -1,3 +1,9 @@
+## 1.4.3 (2023-05-17)
+
+### Bug fixes
+
+Include CommonJS type declarations in the package to please new TypeScript resolution settings.
+
 ## 1.4.2 (2022-10-17)
 
 ### Bug fixes
