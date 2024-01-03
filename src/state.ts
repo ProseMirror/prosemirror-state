@@ -141,7 +141,7 @@ export class EditorState {
     // This loop repeatedly gives plugins a chance to respond to
     // transactions as new transactions are added, making sure to only
     // pass the transactions the plugin did not see before.
-    outer: for (;;) {
+    for (;;) {
       let haveNew = false
       for (let i = 0; i < this.config.plugins.length; i++) {
         let plugin = this.config.plugins[i]
