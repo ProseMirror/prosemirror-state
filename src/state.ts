@@ -221,18 +221,10 @@ export class EditorState {
     return instance
   }
 
-  /// Serialize this state to JSON. If you want to serialize the state
-  /// of plugins, pass an object mapping property names to use in the
-  /// resulting JSON object to plugin objects. The argument may also be
-  /// a string or number, in which case it is ignored, to support the
-  /// way `JSON.stringify` calls `toString` methods.
-
   /**
-   * Serialize this state to JSON. If you want to serialize the state
-   * of plugins, pass an object mapping property names to use in the
-   * resulting JSON object to plugin objects. The argument may also be
-   * a string or number, in which case it is ignored, to support the
-   * way `JSON.stringify` calls `toString` methods.
+   * Serialize this state to JSON. If you want to serialize the state of plugins, pass an object mapping property names
+   * to use in the resulting JSON object to plugin objects. The argument may also be a string or number, in which case
+   * it is ignored, to support the way `JSON.stringify` calls `toString` methods.
    * 
    * @param {Object.<string, Plugin>} [pluginFields] - An object mapping property names to plugins used for serialization.
    * @throws {RangeError} Thrown if reserved property names ("doc" or "selection") are used in `pluginFields`.
