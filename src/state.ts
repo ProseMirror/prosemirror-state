@@ -80,13 +80,13 @@ export interface EditorStateConfig {
   plugins?: readonly Plugin[]
 }
 
-/// The state of a ProseMirror editor is represented by an object of
-/// this type. A state is a persistent data structure—it isn't
-/// updated, but rather a new state value is computed from an old one
-/// using the [`apply`](#state.EditorState.apply) method.
-///
-/// A state holds a number of built-in fields, and plugins can
-/// [define](#state.PluginSpec.state) additional fields.
+/**
+ * Represents the state of a ProseMirror editor.
+ * 
+ * An EditorState is a persistent data structure that is not updated directly. Instead, 
+ * new state values are computed from old ones using the [`apply`](#state.EditorState.apply) method.
+ * It contains built-in fields and plugins can [define](#state.PluginSpec.state) additional fields.
+ */
 export class EditorState {
   /// @internal
   constructor(
@@ -129,11 +129,17 @@ export class EditorState {
     return true
   }
 
-  /// Verbose variant of [`apply`](#state.EditorState.apply) that
-  /// returns the precise transactions that were applied (which might
-  /// be influenced by the [transaction
-  /// hooks](#state.PluginSpec.filterTransaction) of
-  /// plugins) along with the new state.
+  /**
+   * Verbose variant of [`apply`](#state.EditorState.apply) that returns the precise transactions that were applied.
+   * 
+   * This method can be influenced by [transaction hooks](#state.PluginSpec.filterTransaction) of plugins.
+   * It returns an object containing the new state and an array of the applied transactions.
+   * 
+   * @param {Transaction} rootTr - The root transaction to apply.
+   * @returns {{state: EditorState, transactions: readonly Transaction[]}} - An object with the following properties:
+   *   - state: The new state after applying the transactions.
+   *   - transactions: An array of readonly transactions that were actually applied.
+   */
   applyTransaction(rootTr: Transaction): {state: EditorState, transactions: readonly Transaction[]} {
     if (!this.filterTransaction(rootTr)) return {state: this, transactions: []}
 
@@ -190,12 +196,18 @@ export class EditorState {
     return instance
   }
 
-  /// Create a new state based on this one, but with an adjusted set
-  /// of active plugins. State fields that exist in both sets of
-  /// plugins are kept unchanged. Those that no longer exist are
-  /// dropped, and those that are new are initialized using their
-  /// [`init`](#state.StateField.init) method, passing in the new
-  /// configuration object..
+  /**
+   * Creates a new state based on the current state with an adjusted set of active plugins.
+   * 
+   * State fields that exist in both sets of plugins are kept unchanged. 
+   * Those that no longer exist are dropped, and those that are new are
+   * initialized using their [`init`](#state.StateField.init) method,
+   * passing in the new configuration object.
+   * 
+   * @param {Object} config - Configuration object for the new state.
+   * @param {readonly Plugin[]} [config.plugins] - New set of active plugins.
+   * @returns {EditorState} The newly configured state.
+   */
   reconfigure(config: {
     /// New set of active plugins.
     plugins?: readonly Plugin[]    
@@ -214,6 +226,18 @@ export class EditorState {
   /// resulting JSON object to plugin objects. The argument may also be
   /// a string or number, in which case it is ignored, to support the
   /// way `JSON.stringify` calls `toString` methods.
+
+  /**
+   * Serialize this state to JSON. If you want to serialize the state
+   * of plugins, pass an object mapping property names to use in the
+   * resulting JSON object to plugin objects. The argument may also be
+   * a string or number, in which case it is ignored, to support the
+   * way `JSON.stringify` calls `toString` methods.
+   * 
+   * @param {Object.<string, Plugin>} [pluginFields] - An object mapping property names to plugins used for serialization.
+   * @throws {RangeError} Thrown if reserved property names ("doc" or "selection") are used in `pluginFields`.
+   * @returns {any} The serialized state object.
+   */
   toJSON(pluginFields?: {[propName: string]: Plugin}): any {
     let result: any = {doc: this.doc.toJSON(), selection: this.selection.toJSON()}
     if (this.storedMarks) result.storedMarks = this.storedMarks.map(m => m.toJSON())
@@ -226,11 +250,23 @@ export class EditorState {
     return result
   }
 
-  /// Deserialize a JSON representation of a state. `config` should
-  /// have at least a `schema` field, and should contain array of
-  /// plugins to initialize the state with. `pluginFields` can be used
-  /// to deserialize the state of plugins, by associating plugin
-  /// instances with the property names they use in the JSON object.
+
+  /**
+   * Deserializes a JSON representation of a state.
+   * 
+   * The `config` object should have at least a `schema` field, and can optionally include an array of
+   * plugins to initialize the state with. The `pluginFields` argument can be used to deserialize the state
+   * of plugins, by associating plugin instances with the property names they use in the JSON object.  
+  
+   * 
+   * @param {Object} config - The configuration object for deserialization.
+   * @param {Schema} config.schema - The schema to use. (Required)
+   * @param {readonly Plugin[]} [config.plugins] - The set of active plugins. (Optional)
+   * @param {any} json - The JSON representation of the state.
+   * @param {Object.<string, Plugin>} [pluginFields] - An object mapping property names to plugins used for deserialization. (Optional)
+   * @throws {RangeError} Thrown if the input JSON is invalid or the required `schema` field is missing in `config`.
+   * @returns {EditorState} The deserialized state object.
+   */
   static fromJSON(config: {
     /// The schema to use.
     schema: Schema
