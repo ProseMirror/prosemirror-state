@@ -178,7 +178,7 @@ export class EditorState {
     return newInstance
   }
 
-  /// Start a [transaction](#state.Transaction) from this state.
+  /// Accessor that constructs and returns a new [transaction](#state.Transaction) from this state.
   get tr(): Transaction { return new Transaction(this) }
 
   /// Create a new state.
