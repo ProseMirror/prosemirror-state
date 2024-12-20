@@ -169,7 +169,6 @@ export class Transaction extends Transform {
       return this.replaceSelectionWith(schema.text(text), true)
     } else {
       if (to == null) to = from
-      to = to == null ? from : to
       if (!text) return this.deleteRange(from, to)
       let marks = this.storedMarks
       if (!marks) {
