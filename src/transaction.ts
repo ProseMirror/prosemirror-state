@@ -183,14 +183,16 @@ export class Transaction extends Transform {
 
   /// Store a metadata property in this transaction, keyed either by
   /// name or by plugin.
-  setMeta(key: string | Plugin | PluginKey, value: any): this {
+  setMeta<T extends string | Plugin | PluginKey, V = T extends string ? any : T extends Plugin<infer I> ? I : T extends PluginKey<infer I> ? I : never>(key: T, value: V): this {
     this.meta[typeof key == "string" ? key : key.key] = value
     return this
   }
 
   /// Retrieve a metadata property for a given name or plugin.
-  getMeta(key: string | Plugin | PluginKey) {
-    return this.meta[typeof key == "string" ? key : key.key]
+  getMeta<T extends string | Plugin | PluginKey, V = T extends string ? any : T extends Plugin<infer I> ? I : T extends PluginKey<infer I> ? I : never>(
+    key: T
+  ): V {
+    return this.meta[typeof key == "string" ? key : key.key];
   }
 
   /// Returns true if this transaction doesn't contain any metadata,
