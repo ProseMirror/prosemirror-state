@@ -1,4 +1,4 @@
-import {type EditorView, type EditorProps} from "prosemirror-view"
+import type {EditorView, EditorProps} from "prosemirror-view"
 import {EditorState, EditorStateConfig} from "./state"
 import {Transaction} from "./transaction"
 

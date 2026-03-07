@@ -1,6 +1,6 @@
 import {Transform, Step} from "prosemirror-transform"
 import {Mark, MarkType, Node, Slice} from "prosemirror-model"
-import {type EditorView} from "prosemirror-view"
+import type {EditorView} from "prosemirror-view"
 import {Selection} from "./selection"
 import {Plugin, PluginKey} from "./plugin"
 import {EditorState} from "./state"

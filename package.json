@@ -25,12 +25,20 @@
   },
   "dependencies": {
     "prosemirror-model": "^1.0.0",
-    "prosemirror-transform": "^1.0.0",
-    "prosemirror-view": "^1.27.0"
+    "prosemirror-transform": "^1.0.0"
   },
   "devDependencies": {
     "@prosemirror/buildhelper": "^0.1.5",
-    "prosemirror-test-builder": "^1.0.0"
+    "prosemirror-test-builder": "^1.0.0",
+    "prosemirror-view": "^1.27.0"
+  },
+  "peerDependencies": {
+    "prosemirror-view": "^1.27.0"
+  },
+  "peerDependenciesMeta": {
+    "prosemirror-view": {
+      "optional": true
+    }
   },
   "scripts": {
     "test": "pm-runtests",
